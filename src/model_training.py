@@ -1,248 +1,243 @@
+# Importing necessary libraries
 import pandas as pd
 import numpy as np
-import itertools
+import matplotlib.pyplot as plt
+import seaborn as sns
 from statsmodels.tsa.statespace.sarimax import SARIMAX
-from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
-from sklearn.preprocessing import StandardScaler
-from fbprophet import Prophet
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from prophet import Prophet
+import itertools
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from sklearn.preprocessing import StandardScaler
+from torch.utils.data import DataLoader, Dataset
 
-# Load the dataset and preprocess
-def load_data(file_path):
-    """
-    Load and preprocess the dataset.
-    """
-    data = pd.read_csv(file_path)
-    data = data.rename(columns={"Date": "ds", "Avg Price (per kg)": "y"})
-    data['ds'] = pd.to_datetime(data['ds'])
-    return data
+# Load the dataset
+data = pd.read_csv(r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Delicious_A_dataset.csv')
 
-# Split data into training and testing
-def split_data(data, split_date):
-    """
-    Split data into training and testing based on a date.
-    """
-    train = data[data['ds'] < split_date]
-    test = data[data['ds'] >= split_date]
-    return train, test
+# Ensure proper datetime format for models requiring 'ds'
+data = data.rename(columns={"Date": "ds", "Avg Price (per kg)": "y"})
+data['ds'] = pd.to_datetime(data['ds'])
 
-# Function to create lagged features
-def create_lagged_features(data, max_lag):
-    """
-    Create lagged features based on max_lag.
-    """
-    for lag in range(1, max_lag + 1):
-        data[f'y_lag{lag}'] = data['y'].shift(lag)
-    return data
+# Filter for available data (Mask=1) for SARIMA and Prophet
+available_data = data[data['Mask'] == 1].copy()
+available_data.reset_index(inplace=True)
 
-# SARIMA Model tuning
-def sarima_tuning(train_data, p_values, d_values, q_values, P_values, D_values, Q_values, seasonal_periods):
-    """
-    Perform grid search to find the best SARIMA parameters.
-    """
+# Split data for training and testing
+train_data = available_data[available_data['ds'] < '2024-09-15']
+test_data = available_data[available_data['ds'] >= '2024-09-15']
+
+# Function to reverse scaling
+def reverse_scaling(scaled_values, data):
+    return scaled_values * (data['y'].max() - data['y'].min()) + data['y'].min()
+
+# SARIMA Model
+def sarima_model(train_data, test_data):
+    p_values = range(0, 3)
+    d_values = range(0, 2)
+    q_values = range(0, 3)
+    P_values = range(0, 3)
+    D_values = range(0, 2)
+    Q_values = range(0, 3)
+    seasonal_periods = [12]
+
     param_grid = list(itertools.product(p_values, d_values, q_values, P_values, D_values, Q_values, seasonal_periods))
     results = []
-    
+
     for param in param_grid:
         try:
             p, d, q, P, D, Q, S = param
-            model = SARIMAX(train_data['y'], order=(p, d, q), seasonal_order=(P, D, Q, S),
-                            enforce_stationarity=False, enforce_invertibility=False)
-            results_fit = model.fit(disp=False)
-            results.append((param, results_fit.aic))
+            sarima_model = SARIMAX(train_data['y'], order=(p, d, q), seasonal_order=(P, D, Q, S))
+            sarima_results = sarima_model.fit(disp=False)
+            results.append((param, sarima_results.aic))
         except Exception as e:
-            print(f"Error with parameters {param}: {e}")
             continue
 
     if results:
         results_df = pd.DataFrame(results, columns=["Params", "AIC"])
         best_params = results_df.sort_values(by="AIC").iloc[0]
-        return best_params
+        print("\nBest Parameters for SARIMA:", best_params)
+
+        best_p, best_d, best_q, best_P, best_D, best_Q, best_S = best_params[0]
+        sarima_model = SARIMAX(train_data['y'], order=(best_p, best_d, best_q), seasonal_order=(best_P, best_D, best_Q, best_S))
+        sarima_results = sarima_model.fit(disp=False)
+        sarima_forecast = sarima_results.get_forecast(steps=len(test_data))
+        return sarima_forecast.predicted_mean
     else:
-        raise ValueError("No valid SARIMA models were successfully fitted.")
-
-# Function to evaluate SARIMA Model
-def train_sarima(train_data, test_data, params):
-    """
-    Train and forecast using the SARIMA model.
-    """
-    p, d, q, P, D, Q, S = params
-    model = SARIMAX(train_data['y'], order=(p, d, q), seasonal_order=(P, D, Q, S))
-    results = model.fit(disp=False)
-    forecast = results.get_forecast(steps=len(test_data))
-    pred = forecast.predicted_mean
-    mse = mean_squared_error(test_data['y'], pred)
-    mae = mean_absolute_error(test_data['y'], pred)
-    return pred, mse, mae
-
-# Random Forest Model
-def random_forest_model(train_data, val_subset, test_data, features):
-    """
-    Train Random Forest Model and make predictions.
-    """
-    rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
-    rf_model.fit(train_data[features], train_data['y'])
-    rf_predictions = rf_model.predict(test_data[features])
-    mse = mean_squared_error(test_data['y'], rf_predictions)
-    mae = mean_absolute_error(test_data['y'], rf_predictions)
-    return mse, mae, rf_predictions
-
-# XGBoost Model
-def xgboost_model(train_data, val_subset, test_data, features):
-    """
-    Train XGBoost Model and make predictions.
-    """
-    scaler = StandardScaler()
-    train_data['y_scaled'] = scaler.fit_transform(train_data[['y']])
-    xgb_model = XGBRegressor(n_estimators=100, random_state=42)
-    xgb_model.fit(train_data[features], train_data['y_scaled'])
-    xgb_predictions_scaled = xgb_model.predict(test_data[features])
-    xgb_predictions = scaler.inverse_transform(xgb_predictions_scaled.reshape(-1, 1))
-    mse = mean_squared_error(test_data['y'], xgb_predictions)
-    mae = mean_absolute_error(test_data['y'], xgb_predictions)
-    return mse, mae, xgb_predictions
+        print("No valid SARIMA models were successfully fitted.")
+        return None
 
 # Prophet Model
 def prophet_model(train_data, test_data):
-    """
-    Train Prophet Model and make predictions.
-    """
-    prophet = Prophet()
-    prophet.fit(train_data[['ds', 'y']])
-    future = prophet.make_future_dataframe(periods=len(test_data))
-    forecast = prophet.predict(future)
-    predictions = forecast['yhat'][-len(test_data):]
-    mse = mean_squared_error(test_data['y'], predictions)
-    mae = mean_absolute_error(test_data['y'], predictions)
-    return mse, mae, predictions
+    prophet_model = Prophet()
+    prophet_model.fit(train_data[['ds', 'y']])
+    future = prophet_model.make_future_dataframe(periods=len(test_data))
+    prophet_forecast = prophet_model.predict(future)
+    return prophet_forecast['yhat'][-len(test_data):]
+
+# Function to create lagged features
+def create_lagged_features(data, max_lag):
+    for lag in range(1, max_lag + 1):
+        data[f'y_lag{lag}'] = data['y'].shift(lag)
+    return data
+
+# Function to find optimal lags
+def find_best_lags(model, train_data, val_data, features, max_lag):
+    best_lags, best_mse = 0, float('inf')
+    for num_lags in range(1, max_lag + 1):
+        lag_features = features[:num_lags]
+        model.fit(train_data[lag_features], train_data['y'])
+        val_predictions = model.predict(val_data[lag_features])
+        ```python
+        mse = mean_squared_error(val_data['y'], val_predictions)
+        if mse < best_mse:
+            best_mse, best_lags = mse, num_lags
+    return best_lags, best_mse
+
+# Random Forest Model
+def random_forest_model(train_data, test_data):
+    max_lag = 60
+    train_data = create_lagged_features(train_data, max_lag)
+    test_data = create_lagged_features(test_data, max_lag)
+
+    train_subset = train_data[train_data['ds'] < '2023-09-15']
+    val_subset = train_data[(train_data['ds'] >= '2023-09-15') & (train_data['ds'] < '2024-09-15')]
+
+    features = [f'y_lag{i}' for i in range(1, max_lag + 1)]
+    rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+    best_lags_rf, _ = find_best_lags(rf_model, train_subset, val_subset, features, max_lag)
+
+    final_rf_features = features[:best_lags_rf]
+    rf_model.fit(train_data[final_rf_features], train_data['y'])
+    rf_predictions = rf_model.predict(test_data[final_rf_features])
+    return rf_predictions
+
+# XGBoost Model
+def xgboost_model(train_data, test_data):
+    max_lag = 60
+    train_data = create_lagged_features(train_data, max_lag)
+    test_data = create_lagged_features(test_data, max_lag)
+
+    train_subset = train_data[train_data['ds'] < '2023-09-15']
+    val_subset = train_data[(train_data['ds'] >= '2023-09-15') & (train_data['ds'] < '2024-09-15')]
+
+    features = [f'y_lag{i}' for i in range(1, max_lag + 1)]
+    scaler = StandardScaler()
+    train_data['y_scaled'] = scaler.fit_transform(train_data[['y']])
+    xgb_model = XGBRegressor(n_estimators=100, random_state=42)
+    best_lags_xgb, _ = find_best_lags(xgb_model, train_subset, val_subset, features, max_lag)
+
+    final_xgb_features = features[:best_lags_xgb]
+    xgb_model.fit(train_data[final_xgb_features], train_data['y_scaled'])
+    xgb_predictions_scaled = xgb_model.predict(test_data[final_xgb_features])
+    xgb_predictions = scaler.inverse_transform(xgb_predictions_scaled.reshape(-1, 1))
+    return xgb_predictions
 
 # LSTM Model
-def lstm_model(train_data, test_data, seq_length):
-    """
-    Train LSTM model and make predictions.
-    """
-    X_train, y_train = create_sequences(train_data['y'].values, seq_length)
-    X_test, y_test = create_sequences(test_data['y'].values, seq_length)
-    
+def lstm_model(train_data, test_data):
+    def create_sequences(data, seq_length):
+        X, y = [], []
+        for i in range(len(data) - seq_length):
+            X.append(data[i:i + seq_length])
+            y.append(data[i + seq_length])
+        return np.array(X), np.array(y)
+
+    max_seq_length = 10  # Example sequence length
+    train_scaled = MinMaxScaler().fit_transform(train_data[['y']])
+    test_scaled = MinMaxScaler().fit_transform(test_data[['y']])
+
+    X_train, y_train = create_sequences(train_scaled, max_seq_length)
+    X_test, y_test = create_sequences(test_scaled, max_seq_length)
+
     X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
     X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
-    
-    lstm_model = Sequential([LSTM(100, activation='relu', input_shape=(seq_length, 1)),
-                             Dense(1)])
+
+    lstm_model = Sequential([
+        LSTM(100, activation='relu', input_shape=(max_seq_length, 1)),
+        Dense(1)
+    ])
     lstm_model.compile(optimizer='adam', loss='mse')
     lstm_model.fit(X_train, y_train, epochs=100, batch_size=32, verbose=0)
-    lstm_predictions = lstm_model.predict(X_test)
-    mse = mean_squared_error(y_test, lstm_predictions)
-    mae = mean_absolute_error(y_test, lstm_predictions)
-    return mse, mae, lstm_predictions
+
+    lstm_pred = lstm_model.predict(X_test)
+    return lstm_pred.flatten()
 
 # Transformer Model
 class TransformerModel(nn.Module):
-    def __init__(self, input_dim, output_dim, num_heads, num_layers, hidden_dim):
+    def __init__(self, input_dim, embed_dim, num_heads, ff_dim, num_layers):
         super(TransformerModel, self).__init__()
-        self.embedding = nn.Linear(input_dim, hidden_dim)
-        self.transformer = nn.Transformer(d_model=hidden_dim, nhead=num_heads, num_encoder_layers=num_layers)
-        self.fc_out = nn.Linear(hidden_dim, output_dim)
-    
+        self.embedding = nn.Linear(input_dim, embed_dim)
+        self.transformer_blocks = nn.ModuleList([
+            nn.TransformerEncoderLayer(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
+        ])
+        self.fc_out = nn.Linear(embed_dim, 1)
+
     def forward(self, x):
         x = self.embedding(x)
-        x = self.transformer(x, x)
-        x = self.fc_out(x[:, -1, :])  # We take the last output as prediction
-        return x
+        for transformer in self.transformer_blocks:
+            x = transformer(x)
+        return self.fc_out(x)
 
-def transformer_model(train_data, test_data, seq_length):
-    """
-    Train Transformer model and make predictions.
-    """
-    X_train, y_train = create_sequences(train_data['y'].values, seq_length)
-    X_test, y_test = create_sequences(test_data['y'].values, seq_length)
-    
+def transformer_model(train_data ```python
+, test_data):
+    max_seq_length = 10  # Example sequence length
+    train_scaled = MinMaxScaler().fit_transform(train_data[['y']])
+    test_scaled = MinMaxScaler().fit_transform(test_data[['y']])
+
+    X_train, y_train = create_sequences(train_scaled, max_seq_length)
+    X_test, y_test = create_sequences(test_scaled, max_seq_length)
+
     X_train = torch.tensor(X_train, dtype=torch.float32)
     y_train = torch.tensor(y_train, dtype=torch.float32)
     X_test = torch.tensor(X_test, dtype=torch.float32)
-    y_test = torch.tensor(y_test, dtype=torch.float32)
-    
-    model = TransformerModel(input_dim=1, output_dim=1, num_heads=4, num_layers=2, hidden_dim=64)
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+    train_dataset = Dataset(X_train, y_train)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+
+    transformer = TransformerModel(input_dim=1, embed_dim=16, num_heads=2, ff_dim=64, num_layers=2)
     criterion = nn.MSELoss()
-    
-    # Training
+    optimizer = torch.optim.Adam(transformer.parameters(), lr=0.001)
+
     for epoch in range(100):
-        model.train()
-        optimizer.zero_grad()
-        output = model(X_train)
-        loss = criterion(output, y_train)
-        loss.backward()
-        optimizer.step()
-    
-    # Evaluation
-    model.eval()
+        transformer.train()
+        for batch_X, batch_y in train_loader:
+            optimizer.zero_grad()
+            outputs = transformer(batch_X.unsqueeze(-1))
+            loss = criterion(outputs.squeeze(), batch_y)
+            loss.backward()
+            optimizer.step()
+
+    transformer.eval()
     with torch.no_grad():
-        predictions = model(X_test)
+        transformer_pred = transformer(X_test.unsqueeze(-1)).numpy()
     
-    mse = mean_squared_error(y_test, predictions.numpy())
-    mae = mean_absolute_error(y_test, predictions.numpy())
-    return mse, mae, predictions.numpy()
+    return reverse_scaling(transformer_pred, test_data)
 
-# Main function to train models for selected varieties and grades
-def train_models_for_variety_and_grade(file_path, split_date, varieties, grades, seq_length=10):
-    data = load_data(file_path)
-    
-    for variety in varieties:
-        for grade in grades:
-            print(f"Training models for Variety: {variety}, Grade: {grade}")
-            # Filter data based on variety and grade
-            variety_grade_data = data[(data['Variety'] == variety) & (data['Grade'] == grade)]
-            
-            # Split data into train and test
-            train_data, test_data = split_data(variety_grade_data, split_date)
-            
-            # SARIMA tuning and training
-            p_values = range(0, 3)
-            d_values = range(0, 2)
-            q_values = range(0, 3)
-            P_values = range(0, 3)
-            D_values = range(0, 2)
-            Q_values = range(0, 3)
-            seasonal_periods = [7]
-            best_params = sarima_tuning(train_data, p_values, d_values, q_values, P_values, D_values, Q_values, seasonal_periods)
-            sarima_pred, sarima_mse, sarima_mae = train_sarima(train_data, test_data, best_params)
-            
-            # Random Forest Model
-            features = ['feature1', 'feature2']  # Example features
-            rf_mse, rf_mae, rf_predictions = random_forest_model(train_data, None, test_data, features)
-            
-            # XGBoost Model
-            xgb_mse, xgb_mae, xgb_predictions = xgboost_model(train_data, None, test_data, features)
-            
-            # Prophet Model
-            prophet_mse, prophet_mae, prophet_predictions = prophet_model(train_data, test_data)
-            
-            # LSTM Model
-            lstm_mse, lstm_mae, lstm_predictions = lstm_model(train_data, test_data, seq_length)
-            
-            # Transformer Model
-            transformer_mse, transformer_mae, transformer_predictions = transformer_model(train_data, test_data, seq_length)
-            
-            # Store or print results as needed
-            print(f"SARIMA MSE: {sarima_mse}, MAE: {sarima_mae}")
-            print(f"Random Forest MSE: {rf_mse}, MAE: {rf_mae}")
-            print(f"XGBoost MSE: {xgb_mse}, MAE: {xgb_mae}")
-            print(f"Prophet MSE: {prophet_mse}, MAE: {prophet_mae}")
-            print(f"LSTM MSE: {lstm_mse}, MAE: {lstm_mae}")
-            print(f"Transformer MSE: {transformer_mse}, MAE: {transformer_mae}")
+# Main function to run all models
+def main():
+    sarima_pred = sarima_model(train_data, test_data)
+    prophet_pred = prophet_model(train_data, test_data)
+    rf_pred = random_forest_model(train_data, test_data)
+    xgb_pred = xgboost_model(train_data, test_data)
+    lstm_pred = lstm_model(train_data, test_data)
+    transformer_pred = transformer_model(train_data, test_data)
 
-# Example usage:
-file_path = 'path_to_your_data.csv'
-varieties = ['Variety1', 'Variety2']
-grades = ['Grade1', 'Grade2']
-train_models_for_variety_and_grade(file_path, '2022-01-01', varieties, grades)
+    # Calculate and print metrics for each model
+    metrics = {
+        'SARIMA': mean_squared_error(test_data['y'], sarima_pred),
+        'Prophet': mean_squared_error(test_data['y'], prophet_pred),
+        'Random Forest': mean_squared_error(test_data['y'], rf_pred),
+        'XGBoost': mean_squared_error(test_data['y'], xgb_pred),
+        'LSTM': mean_squared_error(test_data['y'], lstm_pred),
+        'Transformer': mean_squared_error(test_data['y'], transformer_pred)
+    }
+
+    for model, mse in metrics.items():
+        print(f"{model} - Mean Squared Error: {mse}")
+
+if __name__ == "__main__":
+    main()
