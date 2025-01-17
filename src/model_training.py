@@ -72,10 +72,10 @@ def sarima_model(train_data, test_data):
         sarima_model = SARIMAX(train_data['y_scaled'], order=(best_p, best_d, best_q), seasonal_order=(best_P, best_D, best_Q, best_S))
         sarima_results = sarima_model.fit(disp=False)
         sarima_forecast = sarima_results.get_forecast(steps=len(test_data))
-        return reverse_scaling(sarima_forecast.predicted_mean.values, scaler)  # Reverse scaling
+        return reverse_scaling(sarima_forecast.predicted_mean.values, scaler)  # Include seq_length
     else:
         print("No valid SARIMA models were successfully fitted.")
-        return None
+        return None, 0  # Return None and a default seq_length
 
 # Prophet Model
 def prophet_model(train_data, test_data):
@@ -150,7 +150,7 @@ def random_forest_model(train_data, test_data):
     final_rf_features = features[:best_lags_rf]
     rf_model.fit(train_data[final_rf_features], train_data['y_scaled'])
     rf_predictions_scaled = rf_model.predict(test_data[final_rf_features])
-    return reverse_scaling(rf_predictions_scaled, scaler)  # Reverse scaling
+    return reverse_scaling(rf_predictions_scaled, scaler) # Reverse scaling
 
 # XGBoost Model
 def xgboost_model(train_data, test_data):
@@ -168,7 +168,7 @@ def xgboost_model(train_data, test_data):
     final_xgb_features = features[:best_lags_xgb]
     xgb_model.fit(train_data[final_xgb_features], train_data['y_scaled'])
     xgb_predictions_scaled = xgb_model.predict(test_data[final_xgb_features])
-    return reverse_scaling(xgb_predictions_scaled, scaler)  # Reverse scaling
+    return reverse_scaling(xgb_predictions_scaled, scaler)# Reverse scaling
 
 # LSTM Model
 def lstm_model(train_data, test_data):
@@ -313,20 +313,32 @@ def main():
         if args.model in models_to_run:
             # Run the specified model
             try:
-                pred, seq_length = models_to_run[args.model](train_data, test_data)
+                pred = models_to_run[args.model](train_data, test_data)  # Only get predictions
                 if pred is None or len(pred) == 0:
                     print(f"{args.model.upper()} did not return valid predictions.")
                     return
                 
                 # Calculate metrics
-                y_true = test_data['y'].values[test_data['Mask'] == 1][seq_length:]
-                mse, mae = calculate_metrics(y_true, pred)
-                print(f"{args.model.upper()} Predictions: {pred}")
-                print(f"MSE: {mse}, MAE: {mae}")
+                if args.model in ['lstm', 'transformer']:
+                    seq_length = find_best_seq_length(train_data, 20)  # Get sequence length for LSTM and Transformer
+                    y_true = test_data['y'].values[test_data['Mask'] == 1][seq_length:]
+                    mse, mae = calculate_metrics(y_true, pred)
+                    print(f"{args.model.upper()} Predictions: {pred}")
+                    print(f"MSE: {mse}, MAE: {mae}")
 
-                # Plot results
-                dates = test_data['ds'].values[test_data['Mask'] == 1][seq_length:]
-                plot_actual_vs_predicted(y_true, pred, args.model, dates)
+                    # Handle plotting
+                    dates = test_data['ds'].values[test_data['Mask'] == 1][seq_length:]
+                    plot_actual_vs_predicted(y_true, pred, args.model, dates)
+                else:
+                    # For other models, use the entire test set
+                    y_true = test_data['y'].values[test_data['Mask'] == 1]
+                    mse, mae = calculate_metrics(y_true, pred)
+                    print(f"{args.model.upper()} Predictions: {pred}")
+                    print(f"MSE: {mse}, MAE: {mae}")
+
+                    # Handle plotting
+                    dates = test_data['ds'].values[test_data['Mask'] == 1]
+                    plot_actual_vs_predicted(y_true, pred, args.model, dates)
             except Exception as e:
                 print(f"Error running {args.model.upper()}: {e}")
         else:
@@ -335,20 +347,32 @@ def main():
         # Run all models
         for model_name, model_func in models_to_run.items():
             try:
-                pred, seq_length = model_func(train_data, test_data)
+                pred = model_func(train_data, test_data)  # Only get predictions
                 if pred is None or len(pred) == 0:
                     print(f"{model_name.upper()} did not return valid predictions.")
                     continue
                 
                 # Calculate metrics
-                y_true = test_data['y'].values[test_data['Mask'] == 1][seq_length:]
-                mse, mae = calculate_metrics(y_true, pred)
-                print(f"{model_name.upper()} Predictions: {pred}")
-                print(f"MSE: {mse}, MAE: {mae}")
+                if model_name in ['lstm', 'transformer']:
+                    seq_length = find_best_seq_length(train_data, 20)  # Get sequence length for LSTM and Transformer
+                    y_true = test_data['y'].values[test_data['Mask'] == 1][seq_length:]
+                    mse, mae = calculate_metrics(y_true, pred)
+                    print(f"{model_name.upper()} Predictions: {pred}")
+                    print(f"MSE: {mse}, MAE: {mae}")
 
-                # Plot results
-                dates = test_data['ds'].values[test_data['Mask'] == 1][seq_length:]
-                plot_actual_vs_predicted(y_true, pred, model_name, dates)
+                    # Handle plotting
+                    dates = test_data['ds'].values[test_data['Mask'] == 1][seq_length:]
+                    plot_actual_vs_predicted(y_true, pred, model_name, dates)
+                else:
+                    # For other models, use the entire test set
+                    y_true = test_data['y'].values[test_data['Mask'] == 1]
+                    mse, mae = calculate_metrics(y_true, pred)
+                    print(f"{model_name.upper()} Predictions: {pred}")
+                    print(f"MSE: {mse}, MAE: {mae}")
+
+                    # Handle plotting
+                    dates = test_data['ds'].values[test_data['Mask'] == 1]
+                    plot_actual_vs_predicted(y_true, pred, model_name, dates)
             except Exception as e:
                 print(f"Error running {model_name.upper()}: {e}")
 
