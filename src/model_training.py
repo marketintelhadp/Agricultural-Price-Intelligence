@@ -94,13 +94,19 @@ def create_lagged_features(data, max_lag):
     return data
 
 # Function to create sequences for LSTM and Transformer
-# Function to create sequences for LSTM and Transformer
 def create_sequences(data, seq_length):
+    if len(data) <= seq_length:
+        print("Error: Data length must be greater than the sequence length.")
+        return np.array([]), np.array([])
+
     X, y = [], []
     for i in range(len(data) - seq_length):
         X.append(data[i:i + seq_length])
-        y.append(data[i + seq_length])  # This should be the next value after the sequence
-    return np.array(X), np.array(y)
+        y.append(data[i + seq_length])  # Target value
+
+    X, y = np.array(X), np.array(y)
+    print(f"Shape of X: {X.shape}, Shape of y: {y.shape}")
+    return X, y
 
 
 # Function to find optimal lags for RF and XGBoost
@@ -231,16 +237,16 @@ class TransformerModel(nn.Module):
 # Transformer Model
 def transformer_model(train_data, test_data):
     # Define sequence length
-    best_seq_length = find_best_seq_length(train_data, 5)
+    seq_length = find_best_seq_length(train_data, 5)
       # Or dynamically find the best seq_length
 
     # Create sequences for training and testing
-    X_train, y_train = create_sequences(train_data['y_scaled'].values, best_seq_length)
-    X_test, y_test = create_sequences(test_data['y_scaled'].values, best_seq_length)
+    X_train, y_train = create_sequences(train_data['y_scaled'].values, seq_length)
+    X_test, y_test = create_sequences(test_data['y_scaled'].values, seq_length)
 
     if len(X_train) == 0 or len(X_test) == 0:
         print("No sequences created for training or testing.")
-        return np.zeros(len(test_data)), best_seq_length
+        return np.zeros(len(test_data)), seq_length
 
     # Create datasets and dataloaders
     train_dataset = TimeSeriesDataset(X_train, y_train)
@@ -274,7 +280,7 @@ def transformer_model(train_data, test_data):
     # Align predictions
     transformer_pred_aligned = transformer_pred[test_data['Mask'].iloc[:len(transformer_pred)] == 1]
 
-    return transformer_pred_aligned, best_seq_length
+    return transformer_pred_aligned, seq_length
 
 def calculate_metrics(y_true, y_pred):
     mse = mean_squared_error(y_true, y_pred)
@@ -320,14 +326,15 @@ def main():
                 
                 # Calculate metrics
                 if args.model in ['lstm', 'transformer']:
-                    seq_length = find_best_seq_length(train_data, 20)  # Get sequence length for LSTM and Transformer
-                    y_true = test_data['y'].values[test_data['Mask'] == 1][seq_length:]
+                    pred, seq_length = models_to_run[args.model](train_data, test_data)
+                    #seq_length = find_best_seq_length(train_data, 5)  # Get sequence length for LSTM and Transformer
+                    y_true = test_data['y'].values[test_data['Mask'] == 1][-len(pred):]
                     mse, mae = calculate_metrics(y_true, pred)
                     print(f"{args.model.upper()} Predictions: {pred}")
                     print(f"MSE: {mse}, MAE: {mae}")
 
                     # Handle plotting
-                    dates = test_data['ds'].values[test_data['Mask'] == 1][seq_length:]
+                    dates = test_data['ds'].values[test_data['Mask'] == 1][-len(pred):]
                     plot_actual_vs_predicted(y_true, pred, args.model, dates)
                 else:
                     # For other models, use the entire test set
@@ -354,14 +361,14 @@ def main():
                 
                 # Calculate metrics
                 if model_name in ['lstm', 'transformer']:
-                    seq_length = find_best_seq_length(train_data, 20)  # Get sequence length for LSTM and Transformer
-                    y_true = test_data['y'].values[test_data['Mask'] == 1][seq_length:]
+                    #seq_length = find_best_seq_length(train_data, 20)  # Get sequence length for LSTM and Transformer
+                    y_true = test_data['y'].values[test_data['Mask'] == 1]#[seq_length:]
                     mse, mae = calculate_metrics(y_true, pred)
                     print(f"{model_name.upper()} Predictions: {pred}")
                     print(f"MSE: {mse}, MAE: {mae}")
 
                     # Handle plotting
-                    dates = test_data['ds'].values[test_data['Mask'] == 1][seq_length:]
+                    dates = test_data['ds'].values[test_data['Mask'] == 1]#[seq_length:]
                     plot_actual_vs_predicted(y_true, pred, model_name, dates)
                 else:
                     # For other models, use the entire test set
