@@ -179,11 +179,15 @@ def xgboost_model(train_data, test_data):
 # LSTM Model
 def lstm_model(train_data, test_data):
     # Determine the best sequence length
-    seq_length = find_best_seq_length(train_data, 5)
+    seq_length = find_best_seq_length(train_data, 25)
     
     # Create sequences for training and testing
     X_train, y_train = create_sequences(train_data[['y_scaled']].values, seq_length)  # Use scaled y
-    X_test, y_test = create_sequences(test_data[['y_scaled']].values, seq_length)  # Use scaled y
+    
+    # Adjust test data to avoid overlap with training sequences
+    test_start_index = seq_length  # Start after the training sequences
+    test_sequences = test_data.iloc[test_start_index:]
+    X_test, y_test = create_sequences(test_sequences[['y_scaled']].values, seq_length)
 
     # Check if sequences were created successfully
     if len(X_train) == 0 or len(X_test) == 0:
@@ -237,7 +241,7 @@ class TransformerModel(nn.Module):
 # Transformer Model
 def transformer_model(train_data, test_data):
     # Define sequence length
-    seq_length = find_best_seq_length(train_data, 5)
+    seq_length = find_best_seq_length(train_data, 25)
       # Or dynamically find the best seq_length
 
     # Create sequences for training and testing
