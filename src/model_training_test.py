@@ -18,7 +18,6 @@ from torch.utils.data import DataLoader, Dataset
 import argparse  # Importing argparse
 # Load the dataset
 data = pd.read_csv(r'data/raw/processed/Processed_test/Kullu Delicious_B_dataset.csv')
-
 # Ensure proper datetime format for models requiring 'ds'
 data = data.rename(columns={"Date": "ds", "Avg Price (per kg)": "y"})
 data['ds'] = pd.to_datetime(data['ds'])
