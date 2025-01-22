@@ -17,7 +17,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import argparse  # Importing argparse
 # Load the dataset
-data = pd.read_csv(r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Processed_test\Maharaji_B_dataset.csv')
+data = pd.read_csv(r'data/raw/processed/Processed_test/Kullu Delicious_B_dataset.csv')
 
 # Ensure proper datetime format for models requiring 'ds'
 data = data.rename(columns={"Date": "ds", "Avg Price (per kg)": "y"})
@@ -354,7 +354,7 @@ def main():
                     save_plot(y_true, pred, args.model, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Maharaji_B", args.model)
+                result_dir = os.path.join("model_results","Kullu_B", args.model)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{args.model}_results.txt")
                 with open(result_path, "w") as f:
