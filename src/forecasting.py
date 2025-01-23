@@ -102,7 +102,7 @@ def evaluate_model(model, X, y, scaler):
 
 # Main function
 def main():
-    varieties = ["Delicious"]  # Corrected variety name
+    varieties = ["Kullu Delicious"]  # Corrected variety name
     grades = ["A", "B"]  # Grades A and B
     forecast_days = 15  # Forecast for 15 days
     max_seq_length = 50  # Maximum sequence length to search for
