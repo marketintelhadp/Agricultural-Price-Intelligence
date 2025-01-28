@@ -32,6 +32,24 @@ def clean_data(df):
     df = df.drop(columns=['CaseType', 'Min Price', 'Max Price', 'Avg Price'], errors='ignore')
     return df
 
+# Function to generate descriptive statistics
+def generate_descriptive_statistics(df, output_folder):
+    """Generate descriptive statistics for each variety."""
+    os.makedirs(output_folder, exist_ok=True)
+    description_folder = os.path.join(output_folder, "descriptive_statistics")
+    os.makedirs(description_folder, exist_ok=True)
+
+    varieties = df['Variety'].unique()
+    descriptive_results = {}
+
+    for variety in varieties:
+        variety_df = df[df['Variety'] == variety]
+        stats = variety_df.describe()
+        descriptive_results[variety] = stats
+        stats.to_csv(os.path.join(description_folder, f"{variety}_descriptive_statistics.csv"))
+
+    return descriptive_results
+
 # Function to generate datasets for each variety and grade
 def generate_datasets(df, output_folder):
     """Generate separate datasets for each variety and grade."""
@@ -73,52 +91,61 @@ def generate_datasets(df, output_folder):
     return output_datasets
 
 # Function for data visualization
-def visualize_data(df):
+def visualize_data(df, output_folder):
     """Generate exploratory visualizations."""
+    # Create directory for saving plots
+    exploration_results_folder = os.path.join(output_folder, "data_exploration_results")
+    os.makedirs(exploration_results_folder, exist_ok=True)
+
     # Distribution of numerical features
-    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     df.select_dtypes(include='number').hist(bins=20, figsize=(10, 8))
     plt.tight_layout()
-    plt.show()
+    plt.savefig(os.path.join(exploration_results_folder, 'numerical_features_distribution.png'))
+    plt.close()
 
     # Distribution by variety
     plt.figure(figsize=(12, 8))
     sns.histplot(data=df, x='Avg Price (per kg)', hue='Variety', kde=True)
     plt.title("Distribution of Avg Price (per kg) by Variety")
-    plt.show()
+    plt.savefig(os.path.join(exploration_results_folder, 'avg_price_distribution_by_variety.png'))
+    plt.close()
 
-    # Trends over time (without using a sequence column)
+    # Trends over time (using Mask = 1)
     plt.figure(figsize=(14, 8))
-    for (variety, grade), subset in df.groupby(['Variety', 'Grade']):
+    for (variety, grade), subset in df[df['Mask'] == 1].groupby(['Variety', 'Grade']):
         if not subset.empty:
             plt.plot(subset['Date'], subset['Avg Price (per kg)'], label=f"{variety} - {grade}")
     plt.legend(loc='best', fontsize=8)
     plt.xlabel('Date')
     plt.ylabel('Avg Price (per kg)')
-    plt.title('Trends by Variety and Grade')
+    plt.title('Trends by Variety and Grade (Filtered by Mask)')
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(os.path.join(exploration_results_folder, 'trends_by_variety_and_grade_filtered.png'))
+    plt.close()
 
 # Main function
 def main():
     # File path to the dataset
-    file_path = r"D:\ML Repositories\Price_forecasting_project\data\raw\processed\samples\ShopianDaily.xlsx"
-    output_folder = r"D:\ML Repositories\Price_forecasting_project\data\raw\processed\Processed_test"
-    
+    file_path = r"D:\ML Repositories\Price_forecasting_project\data\raw\Pulwama Prichoo Final.xlsx"
+    output_folder = r"D:\ML Repositories\Price_forecasting_project\data\raw\processed\Pulwama\Prichoo"
+
     # Load data
     df = load_data(file_path)
 
     # Clean data
     df = clean_data(df)
 
+    # Generate descriptive statistics
+    descriptive_statistics = generate_descriptive_statistics(df, output_folder)
+
     # Visualize data
-    visualize_data(df)
+    visualize_data(df, output_folder)
 
     # Generate datasets
     output_datasets = generate_datasets(df, output_folder)
 
-    print("Datasets generated and visualizations created successfully!")
+    print("Datasets generated, descriptive statistics created, and visualizations completed successfully!")
 
 if __name__ == "__main__":
     main()
