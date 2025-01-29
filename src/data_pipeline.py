@@ -30,6 +30,7 @@ def clean_data(df):
 
     # Drop original price columns and CaseType
     df = df.drop(columns=['CaseType', 'Min Price', 'Max Price', 'Avg Price'], errors='ignore')
+    df['Mask'] = (df['Min Price (per kg)'] > 0).astype(int)
     return df
 
 # Function to generate descriptive statistics
@@ -90,9 +91,19 @@ def generate_datasets(df, output_folder):
 
     return output_datasets
 
-# Function for data visualization
 def visualize_data(df, output_folder):
     """Generate exploratory visualizations."""
+    
+    # Create directory for saving plots
+    exploration_results_folder = os.path.join(output_folder, "data_exploration_results")
+    os.makedirs(exploration_results_folder, exist_ok=True)
+
+    # Ensure 'Date' is a datetime object and sort data
+    df['Date'] = pd.to_datetime(df['Date'])
+    df = df.sort_values(by='Date')  # Sort entire dataframe by Date
+
+    # Trends over time (filtered by Mask = 1)
+    plt.figure(figsize=(14, 8))
     # Create directory for saving plots
     exploration_results_folder = os.path.join(output_folder, "data_exploration_results")
     os.makedirs(exploration_results_folder, exist_ok=True)
@@ -109,27 +120,32 @@ def visualize_data(df, output_folder):
     plt.title("Distribution of Avg Price (per kg) by Variety")
     plt.savefig(os.path.join(exploration_results_folder, 'avg_price_distribution_by_variety.png'))
     plt.close()
-
-    # Trends over time (using Mask = 1)
-    plt.figure(figsize=(14, 8))
+    
     for (variety, grade), subset in df[df['Mask'] == 1].groupby(['Variety', 'Grade']):
         if not subset.empty:
-            plt.plot(subset['Date'], subset['Avg Price (per kg)'], label=f"{variety} - {grade}")
-    plt.legend(loc='best', fontsize=8)
+            subset = subset.sort_values(by='Date')  # Ensure each subset is sorted properly
+            plt.plot(subset['Date'], subset['Avg Price (per kg)'], linestyle='-', marker='o', label=f"{variety} - {grade}")
+
+    plt.legend(loc='best', fontsize=8, ncol=2)
     plt.xlabel('Date')
     plt.ylabel('Avg Price (per kg)')
     plt.title('Trends by Variety and Grade (Filtered by Mask)')
-    plt.grid(True)
+
+    # Improve x-axis readability
+    plt.xticks(rotation=45, ha='right')
+    plt.gca().xaxis.set_major_locator(plt.MaxNLocator(nbins=10))
+
+    plt.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
     plt.savefig(os.path.join(exploration_results_folder, 'trends_by_variety_and_grade_filtered.png'))
     plt.close()
-
+    
 # Main function
 def main():
     # File path to the dataset
-    file_path = r"D:\ML Repositories\Price_forecasting_project\data\raw\Pulwama Prichoo Final.xlsx"
-    output_folder = r"D:\ML Repositories\Price_forecasting_project\data\raw\processed\Pulwama\Prichoo"
-
+    file_path = r"D:\ML Repositories\Price_forecasting_project\data\raw\Pulwama Pachhar Final.xlsx"
+    output_folder = r"D:\ML Repositories\Price_forecasting_project\data\raw\processed\Pulwama\Pachhar"
+    eda_folder = r"D:\ML Repositories\Price_forecasting_project\Data_exploration_results\Pulwama\Pachhar"
     # Load data
     df = load_data(file_path)
 
@@ -137,10 +153,10 @@ def main():
     df = clean_data(df)
 
     # Generate descriptive statistics
-    descriptive_statistics = generate_descriptive_statistics(df, output_folder)
+    descriptive_statistics = generate_descriptive_statistics(df, eda_folder)
 
     # Visualize data
-    visualize_data(df, output_folder)
+    visualize_data(df, eda_folder)
 
     # Generate datasets
     output_datasets = generate_datasets(df, output_folder)
