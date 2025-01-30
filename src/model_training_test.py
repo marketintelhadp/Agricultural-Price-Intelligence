@@ -17,7 +17,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import argparse  # Importing argparse
 # Load the dataset
-data = pd.read_csv(r'data/raw/processed/Pulwama/Prichoo/Delicious_A_dataset.csv')
+data = pd.read_csv(r'data/raw/processed/Pulwama/Prichoo/Kullu Delicious_A_dataset.csv')
 # Ensure proper datetime format for models requiring 'ds'
 data = data.rename(columns={"Date": "ds", "Avg Price (per kg)": "y"})
 data['ds'] = pd.to_datetime(data['ds'])
@@ -181,7 +181,10 @@ def lstm_model(train_data, test_data):
     
     # Create sequences for training and testing
     X_train, y_train = create_sequences(train_data[['y_scaled']].values, seq_length)  # Use scaled y
-    X_test, y_test = create_sequences(test_data[['y_scaled']].values, seq_length)  # Use scaled y
+    # Adjust test data to avoid overlap with training sequences
+    test_start_index = seq_length  # Start after the training sequences
+    test_sequences = test_data.iloc[test_start_index:]
+    X_test, y_test = create_sequences(test_sequences[['y_scaled']].values, seq_length)
 
     # Check if sequences were created successfully
     if len(X_train) == 0 or len(X_test) == 0:
@@ -353,7 +356,7 @@ def main():
                     save_plot(y_true, pred, args.model, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Pulwama","Prichoo","Delicious_A", args.model)
+                result_dir = os.path.join("model_results","Pulwama","Prichoo","Kullu Delicious_A", args.model)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{args.model}_results.txt")
                 with open(result_path, "w") as f:
