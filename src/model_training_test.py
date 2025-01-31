@@ -17,7 +17,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import argparse  # Importing argparse
 # Load the dataset
-data = pd.read_csv(r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Pulwama\Prichoo\American_B_dataset.csv')
+data = pd.read_csv(r'data/raw/processed/Pulwama/Pachhar/Kullu Delicious_A_dataset.csv')
 # Ensure proper datetime format for models requiring 'ds'
 data = data.rename(columns={"Date": "ds", "Avg Price (per kg)": "y"})
 data['ds'] = pd.to_datetime(data['ds'])
@@ -299,7 +299,7 @@ def save_plot(y_true, y_pred, model_name, dates):
     plt.legend()
 
     # Save the plot in the results directory
-    plot_dir = os.path.join("model_results","Pulwama","Prichoo", model_name)
+    plot_dir = os.path.join("model_results","Pulwama","Pachhar","Kullu Delicious_A", model_name)
     os.makedirs(plot_dir, exist_ok=True)
     plot_path = os.path.join(plot_dir, f"{model_name}_actual_vs_predicted.png")
     plt.savefig(plot_path)
@@ -355,7 +355,7 @@ def main():
                     save_plot(y_true, pred, args.model, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Pulwama","Prichoo","American_B", args.model)
+                result_dir = os.path.join("model_results","Pulwama","Pachhar","Kullu Delicious_A", args.model)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{args.model}_results.txt")
                 with open(result_path, "w") as f:
@@ -380,13 +380,14 @@ def main():
                 
                 # Calculate metrics
                 if model_name in ['lstm', 'transformer']:
-                    y_true = test_data['y'].values[test_data['Mask'] == 1]  # Adjust according to model
+                    pred, seq_length = models_to_run[args.model](train_data, test_data)
+                    y_true = test_data['y'].values[test_data['Mask'] == 1][-len(pred):]  # Adjust according to model
                     mse, mae = calculate_metrics(y_true, pred)
                     print(f"{model_name.upper()} Predictions: {pred}")
                     print(f"MSE: {mse}, MAE: {mae}")
 
                     # Handle plotting
-                    dates = test_data['ds'].values[test_data['Mask'] == 1]
+                    dates = test_data['ds'].values[test_data['Mask'] == 1][-len(pred):]
                     save_plot(y_true, pred, model_name, dates)
 
                 else:
@@ -401,7 +402,7 @@ def main():
                     save_plot(y_true, pred, model_name, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Pulwama","Prichoo", model_name)
+                result_dir = os.path.join("model_results","Pulwama","Pachhar", model_name)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{model_name}_results.txt")
                 with open(result_path, "w") as f:
