@@ -73,7 +73,7 @@ def train_lstm(data, seq_length):
     # Early stopping callback
     early_stopping = EarlyStopping(monitor='loss', patience=5, restore_best_weights=True)
 
-    model.fit(X, y, epochs=50, batch_size=16, verbose=0, callbacks=[early_stopping])
+    model.fit(X, y, epochs=50, batch_size=16, verbose=0, callbacks=[early_stopping],validation_split=0.2)
 
     return model, scaler
 
