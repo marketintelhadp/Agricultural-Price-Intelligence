@@ -39,11 +39,11 @@ def find_best_seq_length(data, max_seq_length):
 
         # Define and train a temporary model
         temp_model = Sequential([
-            LSTM(50, activation='relu', input_shape=(seq_length, 1)),
+            LSTM(100, activation='relu', input_shape=(seq_length, 1)),
             Dense(1)
         ])
         temp_model.compile(optimizer='adam', loss='mse')
-        temp_model.fit(X.reshape((X.shape[0], X.shape[1], 1)), y, epochs=5, batch_size=16, verbose=0)
+        temp_model.fit(X.reshape((X.shape[0], X.shape[1], 1)), y, epochs=50, batch_size=16, verbose=0)
 
         # Evaluate the model
         predictions = temp_model.predict(X.reshape((X.shape[0], X.shape[1], 1)))
@@ -73,7 +73,7 @@ def train_lstm(data, seq_length):
     # Early stopping callback
     early_stopping = EarlyStopping(monitor='loss', patience=5, restore_best_weights=True)
 
-    model.fit(X, y, epochs=50, batch_size=16, verbose=0, callbacks=[early_stopping],validation_split=0.2)
+    model.fit(X, y, epochs=100, batch_size=16, verbose=0, callbacks=[early_stopping])
 
     return model, scaler
 
@@ -100,77 +100,85 @@ def evaluate_model(model, X, y, scaler):
     mae = mean_absolute_error(y, predictions)
     return mse, mae
 
-# Main function
 def main():
-    varieties = ["Kullu Delicious"]  # Corrected variety name
+    market = ["Prichoo", "Pachhar"]  # Markets to process
+    varieties = ["Delicious", "Kullu Delicious", "American"]  # Corrected variety name
     grades = ["A", "B"]  # Grades A and B
-    forecast_days = 15  # Forecast for 15 days
+    forecast_days = 10  # Forecast for 15 days
     max_seq_length = 50  # Maximum sequence length to search for
 
     results = {}
 
-    for variety in varieties:
-        for grade in grades:
-            logging.info(f"Processing {variety} Grade {grade}...")
+    # Iterate over each market, variety, and grade
+    for m in market:
+        for variety in varieties:
+            for grade in grades:
+                logging.info(f"Processing {m} {variety} Grade {grade}...")
 
-            # Update the data path to load from Processed_test
-            data_path = f"data/raw/processed/Processed_test/{variety}_{grade}_dataset.csv"
-            if not os.path.exists(data_path):
-                logging.warning(f"File not found: {data_path}")
-                continue
+                # Update the data path to load from Processed_test for each market
+                data_path = f"data/raw/processed/Pulwama/{m}/{variety}_{grade}_dataset.csv"
+                if not os.path.exists(data_path):
+                    logging.warning(f"File not found: {data_path}")
+                    continue
 
-            data = pd.read_csv(data_path)
+                data = pd.read_csv(data_path)
+                if 'Avg Price (per kg)' not in data.columns or 'Mask' not in data.columns:
+                    logging.error(f"Missing required columns in {data_path}")
+                    continue
 
-            if 'Avg Price (per kg)' not in data.columns or 'Mask' not in data.columns:
-                logging.error(f"Missing required columns in {data_path}")
-                continue
+                # Filter data for Mask == 1
+                data = data[data['Mask'] == 1]
 
-            data = data[data['Mask'] == 1]
+                best_seq_length = find_best_seq_length(data, max_seq_length)
+                logging.info(f"Best sequence length for {variety} Grade {grade}: {best_seq_length}")
 
-            best_seq_length = find_best_seq_length(data, max_seq_length)
-            logging.info(f"Best sequence length for {variety} Grade {grade}: {best_seq_length}")
+                model, scaler = train_lstm(data, best_seq_length)
 
-            model, scaler = train_lstm(data, best_seq_length)
+                # Ensure the model-forecasts directory exists, create it for each market
+                model_forecasts_dir = f"model_forecasts/Pulwama/{m}/{variety}/{grade}"
+                os.makedirs(model_forecasts_dir, exist_ok=True)
 
-            # Ensure the model-forecasts directory exists
-            os.makedirs("model_forecasts", exist_ok=True)
-            model_path = f"models/lstm_{variety}_grade_{grade}.h5"
+                # Save the model dynamically based on market, variety, and grade
+                model_path = f"models/Pulwama/{m}/{variety}/{grade}/lstm_{variety}_grade_{grade}.h5"
+                logging.info(f"Saving model to {model_path}...")
+                model.save(model_path)
+                logging.info("Model saved successfully.")
 
-            # Log the model saving process
-            logging.info(f"Saving model to {model_path}...")
-            model.save(model_path)
-            logging.info("Model saved successfully.")
+                # Make predictions
+                predictions = forecast_future(model, scaler, data, best_seq_length, forecast_days)
 
-            predictions = forecast_future(model, scaler, data, best_seq_length, forecast_days)
+                # Calculate confidence intervals
+                std_dev = np.std(predictions)
+                lower_bound = predictions - 1.96 * std_dev
+                upper_bound = predictions + 1.96 * std_dev
 
-            # Calculate confidence intervals
-            std_dev = np.std(predictions)
-            lower_bound = predictions - 1.96 * std_dev
-            upper_bound = predictions + 1.96 * std_dev
+                results[f"{variety}_grade_{grade}"] = predictions
 
-            results[f"{variety}_grade_{grade}"] = predictions
+                # Plotting the forecasted prices with confidence interval
+                plt.plot(range(forecast_days), predictions, label='Forecasted Prices', color='orange')
+                plt.fill_between(range(forecast_days), lower_bound, upper_bound, color='lightgray', alpha=0.5, label='Confidence Interval')
+                plt.title(f'Price Forecast for {variety} Grade {grade} in {m}')
+                plt.xlabel('Days')
+                plt.ylabel('Price')
+                plt.legend()
 
-            # Plotting the forecasted prices with confidence interval
-            plt.plot(range(forecast_days), predictions, label='Forecasted Prices', color='orange')
-            plt.fill_between(range(forecast_days), lower_bound, upper_bound, color='lightgray', alpha=0.5, label='Confidence Interval')
-            plt.title(f'Price Forecast for {variety} Grade {grade}')
-            plt.xlabel('Days')
-            plt.ylabel('Price')
-            plt.legend()
-            plt.savefig(f'model_forecasts/{variety}_grade_{grade}_forecast.png')
-            plt.close()
+                # Save plot for each market, variety, and grade
+                plot_path = f"model_forecasts/Pulwama/{m}/{variety}/{grade}/{variety}_grade_{grade}_forecast.png"
+                plt.savefig(plot_path)
+                plt.close()
 
-            logging.info(f"Forecast for {variety} Grade {grade}: {predictions}")
-            forecast_df = pd.DataFrame({
-                'Predictions': predictions,
-                'Lower Bound': lower_bound,
-                'Upper Bound': upper_bound
-            })
-            # Ensure separate CSV files for each grade
-            # Ensure separate CSV files for each grade
-            forecast_file_path = f"model_forecasts/{variety}_Grade_{grade}_forecasts.csv"
-            forecast_df.to_csv(forecast_file_path, index=False)
-            logging.info(f"Forecasts saved to {forecast_file_path}")
+                logging.info(f"Forecast for {variety} Grade {grade}: {predictions}")
+                
+                # Save forecasts to CSV with separate files for each market/variety/grade
+                forecast_df = pd.DataFrame({
+                    'Predictions': predictions,
+                    'Lower Bound': lower_bound,
+                    'Upper Bound': upper_bound
+                })
+                
+                forecast_file_path = f"model_forecasts/Pulwama/{m}/{variety}/{grade}/{variety}_Grade_{grade}_forecasts.csv"
+                forecast_df.to_csv(forecast_file_path, index=False)
+                logging.info(f"Forecasts saved to {forecast_file_path}")
 
 if __name__ == "__main__":
     main()
