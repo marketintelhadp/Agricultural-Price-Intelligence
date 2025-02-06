@@ -140,14 +140,6 @@ def main():
                     logging.error(f"Filtered data is empty or contains NaN values for {data_path}.")
                     continue
 
-                # Check for NaN values after filtering
-                if data.empty or data['Avg Price (per kg)'].isnull().any():
-                    logging.error(f"Filtered data is empty or contains NaN values for {data_path}.")
-                    continue
-                if data.empty or data['Avg Price (per kg)'].isnull().any():
-                    logging.error(f"Filtered data is empty or contains NaN values for {data_path}.")
-                    continue
-
                 best_seq_length = find_best_seq_length(data, max_seq_length)
                 logging.info(f"Best sequence length for {variety} Grade {grade}: {best_seq_length}")
 
