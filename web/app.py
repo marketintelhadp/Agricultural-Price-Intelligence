@@ -13,12 +13,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 app = Flask(__name__)
 
 # Load the model with custom loss function
-model_path = r'D:\ML Repositories\Price_forecasting_project\models\Shopian\lstm_Delicious_grade_A.h5'
+model_path = r'models/Shopian/lstm_Delicious_grade_A.h5'
 custom_objects = {'mse': MeanSquaredError()}
 model = load_model(model_path, custom_objects=custom_objects)
 
 # Load the dataset and fit the scaler
-data_path = r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Shopian\Delicious_A_dataset.csv'
+data_path = r'D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Shopian\Delicious_A_dataset.csv'
 data = pd.read_csv(data_path)
 
 # Assuming the relevant time series data is in a column named 'Avg Price (per kg)'
