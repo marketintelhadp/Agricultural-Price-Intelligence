@@ -37,6 +37,17 @@
         input[type="submit"]:hover {
             background-color: #0056b3;
         }
+        img {
+            margin-top: 20px;
+            max-width: 100%;
+            height: auto;
+        }
+        .predictions {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -47,5 +58,14 @@
         <input type="number" id="num_predictions" name="num_predictions" required>
         <input type="submit" value="Get Predictions">
     </form>
+
+    {% if predicted_prices %}
+    <div class="predictions">
+        <h2>Your Predictions</h2>
+        <p>Predicted Prices: {{ predicted_prices }}</p>
+        <h3>Trend Plot</h3>
+        <img src="data:image/png;base64,{{ trend_plot }}" alt="Trend Plot">
+    </div>
+    {% endif %}
 </body>
 </html>
