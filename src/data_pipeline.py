@@ -3,6 +3,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Function to load the dataset
 def load_data(file_path):
@@ -14,24 +18,40 @@ def clean_data(df):
     """Perform data cleaning tasks and convert prices to per kg."""
     # Remove duplicate rows
     df = df.drop_duplicates()
+    
+    # Check if 'Grade' column is not in the dataframe
+    no_grade = 'Grade' not in df.columns
+    
+    # Check if 'CaseType' column is not in the dataframe
+    no_casetype = 'CaseType' not in df.columns
+    
+    # Convert prices per quintal to prices per kg if CaseType is missing
+    if no_casetype and no_grade:
+        df[['Min Price (per kg)', 'Max Price (per kg)', 'Avg Price (per kg)']] = df[ 
+            ['Min Price', 'Max Price', 'Avg Price'] 
+        ] / 100
+    else:
+        # Handle CaseType and convert prices to per kg using case weights
+        case_weights = {'FC': 16, 'HC': 8}
 
-    # Handle CaseType and convert prices to per kg
-    case_weights = {'FC': 16, 'HC': 8}
+        def price_per_kg(row):
+            weight = case_weights.get(row['CaseType'], np.nan)
+            if pd.notna(weight):
+                return [row['Min Price'] / weight, row['Max Price'] / weight, row['Avg Price'] / weight]
+            return [np.nan, np.nan, np.nan]
 
-    def price_per_kg(row):
-        weight = case_weights.get(row['CaseType'], np.nan)
-        if pd.notna(weight):
-            return [row['Min Price'] / weight, row['Max Price'] / weight, row['Avg Price'] / weight]
-        return [np.nan, np.nan, np.nan]
-
-    df[['Min Price (per kg)', 'Max Price (per kg)', 'Avg Price (per kg)']] = df.apply(
-        lambda row: pd.Series(price_per_kg(row)), axis=1
-    )
-
+        df[['Min Price (per kg)', 'Max Price (per kg)', 'Avg Price (per kg)']] = df.apply(
+            lambda row: pd.Series(price_per_kg(row)), axis=1
+        )
+    
     # Drop original price columns and CaseType
     df = df.drop(columns=['CaseType', 'Min Price', 'Max Price', 'Avg Price'], errors='ignore')
+    
+    # Create a mask column where Min Price (per kg) is greater than 0
     df['Mask'] = (df['Min Price (per kg)'] > 0).astype(int)
+    
     return df
+
 
 # Function to generate descriptive statistics
 def generate_descriptive_statistics(df, output_folder):
@@ -53,43 +73,59 @@ def generate_descriptive_statistics(df, output_folder):
 
 # Function to generate datasets for each variety and grade
 def generate_datasets(df, output_folder):
-    """Generate separate datasets for each variety and grade."""
+    """Generate separate datasets for each variety and grade if present."""
     varieties = df['Variety'].unique()
-    grades = df['Grade'].unique()
-    start_date = df['Date'].min()
-    end_date = df['Date'].max()
-    full_date_range = pd.date_range(start=start_date, end=end_date, freq='D')
-
     os.makedirs(output_folder, exist_ok=True)
     output_datasets = {}
 
     for variety in varieties:
-        for grade in grades:
-            subset = df[(df['Variety'] == variety) & (df['Grade'] == grade)].copy()
+        variety_df = df[df['Variety'] == variety].copy()
+        start_date = variety_df['Date'].min()
+        end_date = variety_df['Date'].max()
+        full_date_range = pd.date_range(start=start_date, end=end_date, freq='D')
+        
+        if 'Grade' in df.columns:
+            grades = variety_df['Grade'].unique()
+            for grade in grades:
+                subset = variety_df[variety_df['Grade'] == grade].copy()
+                subset.set_index('Date', inplace=True)
+                subset = subset.reindex(full_date_range)
+                subset.index.name = 'Date'
+                subset.reset_index(inplace=True)
 
-            # Align data with the full date range
-            subset.set_index('Date', inplace=True)
-            subset = subset.reindex(full_date_range)
-            subset.index.name = 'Date'
-            subset.reset_index(inplace=True)
+                subset[['District', 'Market', 'Fruit', 'Variety', 'Grade']] = subset[
+                    ['District', 'Market', 'Fruit', 'Variety', 'Grade']
+                ].ffill()
 
-            # Fill forward relevant fields
-            subset[['District', 'Market', 'Fruit', 'Variety', 'Grade']] = subset[
-                ['District', 'Market', 'Fruit', 'Variety', 'Grade']
+                subset[['Min Price (per kg)', 'Max Price (per kg)', 'Avg Price (per kg)']] = subset[
+                    ['Min Price (per kg)', 'Max Price (per kg)', 'Avg Price (per kg)']
+                ].fillna(0)
+                subset['Mask'] = (subset['Min Price (per kg)'] > 0).astype(int)
+
+                output_datasets[f"{variety}_{grade}"] = subset
+                output_file = os.path.join(output_folder, f"{variety}_{grade}_dataset.csv")
+                subset.to_csv(output_file, index=False)
+        else:
+            variety_df.set_index('Date', inplace=True)
+            variety_df = variety_df.reindex(full_date_range)
+            variety_df.index.name = 'Date'
+            variety_df.reset_index(inplace=True)
+            
+            variety_df[['District', 'Market', 'Fruit', 'Variety']] = variety_df[
+                ['District', 'Market', 'Fruit', 'Variety']
             ].ffill()
 
-            # Replace NaN prices with 0 and set mask
-            subset[['Min Price (per kg)', 'Max Price (per kg)', 'Avg Price (per kg)']] = subset[
+            variety_df[['Min Price (per kg)', 'Max Price (per kg)', 'Avg Price (per kg)']] = variety_df[
                 ['Min Price (per kg)', 'Max Price (per kg)', 'Avg Price (per kg)']
             ].fillna(0)
-            subset['Mask'] = (subset['Min Price (per kg)'] > 0).astype(int)
+            variety_df['Mask'] = (variety_df['Min Price (per kg)'] > 0).astype(int)
 
-            # Save dataset
-            output_datasets[f"{variety}_{grade}"] = subset
-            output_file = os.path.join(output_folder, f"{variety}_{grade}_dataset.csv")
-            subset.to_csv(output_file, index=False)
+            output_datasets[f"{variety}"] = variety_df
+            output_file = os.path.join(output_folder, f"{variety}_dataset.csv")
+            variety_df.to_csv(output_file, index=False)
 
     return output_datasets
+
 
 def visualize_data(df, output_folder):
     """Generate exploratory visualizations."""
@@ -101,12 +137,6 @@ def visualize_data(df, output_folder):
     # Ensure 'Date' is a datetime object and sort data
     df['Date'] = pd.to_datetime(df['Date'])
     df = df.sort_values(by='Date')  # Sort entire dataframe by Date
-
-    # Trends over time (filtered by Mask = 1)
-    plt.figure(figsize=(14, 8))
-    # Create directory for saving plots
-    exploration_results_folder = os.path.join(output_folder, "data_exploration_results")
-    os.makedirs(exploration_results_folder, exist_ok=True)
 
     # Distribution of numerical features
     df.select_dtypes(include='number').hist(bins=20, figsize=(10, 8))
@@ -121,15 +151,22 @@ def visualize_data(df, output_folder):
     plt.savefig(os.path.join(exploration_results_folder, 'avg_price_distribution_by_variety.png'))
     plt.close()
     
-    for (variety, grade), subset in df[df['Mask'] == 1].groupby(['Variety', 'Grade']):
-        if not subset.empty:
-            subset = subset.sort_values(by='Date')  # Ensure each subset is sorted properly
-            plt.plot(subset['Date'], subset['Avg Price (per kg)'], linestyle='-', marker='o', label=f"{variety} - {grade}")
+    # Check if 'Grade' column exists
+    if 'Grade' in df.columns:
+        for (variety, grade), subset in df[df['Mask'] == 1].groupby(['Variety', 'Grade']):
+            if not subset.empty:
+                subset = subset.sort_values(by='Date')  # Ensure each subset is sorted properly
+                plt.plot(subset['Date'], subset['Avg Price (per kg)'], linestyle='-', marker='o', label=f"{variety} - {grade}")
+    else:
+        for variety, subset in df[df['Mask'] == 1].groupby('Variety'):
+            if not subset.empty:
+                subset = subset.sort_values(by='Date')  # Ensure each subset is sorted properly
+                plt.plot(subset['Date'], subset['Avg Price (per kg)'], linestyle='-', marker='o', label=f"{variety}")
 
     plt.legend(loc='best', fontsize=8, ncol=2)
     plt.xlabel('Date')
     plt.ylabel('Avg Price (per kg)')
-    plt.title('Trends by Variety and Grade (Filtered by Mask)')
+    plt.title('Trends by Variety and Grade (Filtered by Mask)' if 'Grade' in df.columns else 'Trends by Variety (Filtered by Mask)')
 
     # Improve x-axis readability
     plt.xticks(rotation=45, ha='right')
@@ -137,31 +174,45 @@ def visualize_data(df, output_folder):
 
     plt.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
-    plt.savefig(os.path.join(exploration_results_folder, 'trends_by_variety_and_grade_filtered.png'))
+    plt.savefig(os.path.join(exploration_results_folder, 'trends_by_variety_and_grade_filtered.png' if 'Grade' in df.columns else 'trends_by_variety_filtered.png'))
     plt.close()
     
 # Main function
 def main():
     # File path to the dataset
-    file_path = r"D:\ML Repositories\Price_forecasting_project\data\raw\Pulwama Pachhar Final.xlsx"
-    output_folder = r"D:\ML Repositories\Price_forecasting_project\data\raw\processed\Pulwama\Pachhar"
-    eda_folder = r"D:\ML Repositories\Price_forecasting_project\Data_exploration_results\Pulwama\Pachhar"
+    file_path = r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\NarwalFinal.xlsx"
+    output_folder = r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Narwal"
+    eda_folder = r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\Data_exploration_results\Narwal"
+    
     # Load data
-    df = load_data(file_path)
+    try:
+        df = load_data(file_path)
+    except Exception as e:
+        logging.error(f"Error loading data: {e}")
+        return
 
     # Clean data
     df = clean_data(df)
 
     # Generate descriptive statistics
-    descriptive_statistics = generate_descriptive_statistics(df, eda_folder)
+    try:
+        descriptive_statistics = generate_descriptive_statistics(df, eda_folder)
+    except Exception as e:
+        logging.error(f"Error generating descriptive statistics: {e}")
 
     # Visualize data
-    visualize_data(df, eda_folder)
+    try:
+        visualize_data(df, eda_folder)
+    except Exception as e:
+        logging.error(f"Error visualizing data: {e}")
 
     # Generate datasets
-    output_datasets = generate_datasets(df, output_folder)
+    try:
+        output_datasets = generate_datasets(df, output_folder)
+    except Exception as e:
+        logging.error(f"Error generating datasets: {e}")
 
-    print("Datasets generated, descriptive statistics created, and visualizations completed successfully!")
+    logging.info("Datasets generated, descriptive statistics created, and visualizations completed successfully!")
 
 if __name__ == "__main__":
     main()

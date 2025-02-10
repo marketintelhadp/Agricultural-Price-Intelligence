@@ -3,8 +3,8 @@ from keras.metrics import MeanSquaredError
 
 class Config:
     # Model and Data Paths
-    MODEL_PATH = r'D:\ML Repositories\Price_forecasting_project\models\Shopian\lstm_Delicious_grade_B.h5'
-    DATA_PATH = r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Shopian\Delicious_B_dataset.csv'
+    MODEL_PATH = r'D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\models\Shopian\lstm_Delicious_grade_A.h5'
+    DATA_PATH = r'data/raw/processed/Shopian/Delicious_A_dataset.csv'
 
     # Custom objects for loading model
     CUSTOM_OBJECTS = {'mse': MeanSquaredError()}
