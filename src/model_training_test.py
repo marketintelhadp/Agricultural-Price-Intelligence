@@ -17,7 +17,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import argparse  # Importing argparse
 # Load the dataset
-data = pd.read_csv(r'data/raw/processed/Pulwama/Pachhar/American_B_dataset.csv')
+data = pd.read_csv(r'D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Narwal\American_dataset.csv')
 # Ensure proper datetime format for models requiring 'ds'
 data = data.rename(columns={"Date": "ds", "Avg Price (per kg)": "y"})
 data['ds'] = pd.to_datetime(data['ds'])
@@ -26,8 +26,8 @@ available_data = data[data['Mask'] == 1].copy()
 available_data.reset_index(inplace=True)
 
 # Split data for training and testing
-train_data = available_data[available_data['ds'] < '2024-09-15']
-test_data = available_data[available_data['ds'] >= '2024-09-15']
+train_data = available_data[available_data['ds'] < '2024-09-01']
+test_data = available_data[available_data['ds'] >= '2024-09-01']
 
 # Scale the target variable
 scaler = StandardScaler()
@@ -143,8 +143,8 @@ def random_forest_model(train_data, test_data):
     train_data = create_lagged_features(train_data.copy(), max_lag)
     test_data = create_lagged_features(test_data.copy(), max_lag)
 
-    train_subset = train_data[train_data['ds'] < '2023-09-15']
-    val_subset = train_data[(train_data['ds'] >= '2023-09-15') & (train_data['ds'] < '2024-09-15')]
+    train_subset = train_data[train_data['ds'] < '2023-09-01']
+    val_subset = train_data[(train_data['ds'] >= '2023-09-01') & (train_data['ds'] < '2024-09-01')]
 
     features = [f'y_lag{i}' for i in range(1, max_lag + 1)]
     rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
@@ -161,8 +161,8 @@ def xgboost_model(train_data, test_data):
     train_data = create_lagged_features(train_data.copy(), max_lag)
     test_data = create_lagged_features(test_data.copy(), max_lag)
 
-    train_subset = train_data[train_data['ds'] < '2023-09-15']
-    val_subset = train_data[(train_data['ds'] >= '2023-09-15') & (train_data['ds'] < '2024-09-15')]
+    train_subset = train_data[train_data['ds'] < '2023-09-01']
+    val_subset = train_data[(train_data['ds'] >= '2023-09-01') & (train_data['ds'] < '2024-09-01')]
 
     features = [f'y_lag{i}' for i in range(1, max_lag + 1)]
     xgb_model = XGBRegressor(n_estimators=100, random_state=42)
@@ -172,23 +172,31 @@ def xgboost_model(train_data, test_data):
     xgb_model.fit(train_data[final_xgb_features], train_data['y_scaled'])
     xgb_predictions_scaled = xgb_model.predict(test_data[final_xgb_features])
     return reverse_scaling(xgb_predictions_scaled, scaler)# Reverse scaling
-
+from tensorflow.keras.callbacks import EarlyStopping
 # LSTM Model
 def lstm_model(train_data, test_data):
-    # Determine the best sequence length
-    seq_length = find_best_seq_length(train_data, 5)
+    max_seq_length = 60  # Max possible lags (like RF/XGB)
     
-    # Create sequences for training and testing
-    X_train, y_train = create_sequences(train_data[['y_scaled']].values, seq_length)  # Use scaled y
-    # Adjust test data to avoid overlap with training sequences
-    test_start_index = seq_length  # Start after the training sequences
-    test_sequences = test_data.iloc[test_start_index:]
-    X_test, y_test = create_sequences(test_sequences[['y_scaled']].values, seq_length)
+    # Create lagged features (consistent with RF & XGB)
+    train_data = create_lagged_features(train_data.copy(), max_seq_length)
+    test_data = create_lagged_features(test_data.copy(), max_seq_length)
 
-    # Check if sequences were created successfully
+    # Split train into training and validation sets
+    train_subset = train_data[train_data['ds'] < '2023-09-01']
+    val_subset = train_data[(train_data['ds'] >= '2023-09-01') & (train_data['ds'] < '2024-09-01')]
+
+    # Find the best sequence length
+    seq_length = find_best_seq_length(train_subset, 5)
+
+    # Create sequences for training, validation, and testing
+    X_train, y_train = create_sequences(train_subset[['y_scaled']].values, seq_length)
+    X_val, y_val = create_sequences(val_subset[['y_scaled']].values, seq_length)
+    X_test, y_test = create_sequences(test_data[['y_scaled']].values, seq_length)
+
     if len(X_train) == 0 or len(X_test) == 0:
         print("No sequences created for training or testing.")
-        return np.zeros(len(test_data)), seq_length  # Return seq_length
+        return np.zeros(len(test_data)), seq_length
+
     # Define the LSTM model
     model = Sequential([
         LSTM(100, activation='relu', input_shape=(seq_length, 1)),
@@ -196,16 +204,21 @@ def lstm_model(train_data, test_data):
     ])
     model.compile(optimizer='adam', loss='mse')
 
-    # Reshape the training data for LSTM input
-    model.fit(X_train.reshape((X_train.shape[0], X_train.shape[1], 1)), y_train, epochs=100, batch_size=32, verbose=0)
+    # Early stopping to prevent overfitting
+    early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
-    # Make predictions on the test data
-    lstm_pred_scaled = model.predict(X_test.reshape((X_test.shape[0], X_test.shape[1], 1)))
+    # Train the model with validation data
+    model.fit(X_train.reshape((-1, seq_length, 1)), y_train,
+              validation_data=(X_val.reshape((-1, seq_length, 1)), y_val),
+              epochs=100, batch_size=32, verbose=0, callbacks=[early_stop])
+
+    # Predict on the test set
+    lstm_pred_scaled = model.predict(X_test.reshape((-1, seq_length, 1)))
 
     # Reverse scaling for final predictions
     lstm_pred = reverse_scaling(lstm_pred_scaled.flatten(), scaler)
 
-    return lstm_pred, seq_length  # Return both predictions and sequence length
+    return lstm_pred, seq_length  # Return predictions and optimal sequence length
 
 # Custom Dataset for PyTorch
 class TimeSeriesDataset(Dataset):
@@ -218,7 +231,7 @@ class TimeSeriesDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
-    
+
 # Transformer Model
 class TransformerModel(nn.Module):
     def __init__(self, input_dim, embed_dim, num_heads, ff_dim, num_layers):
@@ -234,53 +247,93 @@ class TransformerModel(nn.Module):
         for transformer in self.transformer_blocks:
             x = transformer(x)
         return self.fc_out(x[:, -1, :])  # Output only the last time step
-# Transformer Model
-def transformer_model(train_data, test_data):
-    # Define sequence length
-    seq_length = find_best_seq_length(train_data, 5)
-      # Or dynamically find the best seq_length
 
-    # Create sequences for training and testing
-    X_train, y_train = create_sequences(train_data['y_scaled'].values, seq_length)
+# Transformer Model with Validation
+def transformer_model(train_data, test_data):
+    max_seq_length = 60  # Maximum lag considered
+
+    # Create lagged features (for consistency across models)
+    train_data = create_lagged_features(train_data.copy(), max_seq_length)
+    test_data = create_lagged_features(test_data.copy(), max_seq_length)
+
+    # **Train-Validation Split**
+    train_subset = train_data[train_data['ds'] < '2023-09-01']
+    val_subset = train_data[(train_data['ds'] >= '2023-09-01') & (train_data['ds'] < '2024-09-01')]
+
+    # **Find Best Sequence Length**
+    seq_length = find_best_seq_length(train_subset, 5)
+
+    # **Create Sequences**
+    X_train, y_train = create_sequences(train_subset['y_scaled'].values, seq_length)
+    X_val, y_val = create_sequences(val_subset['y_scaled'].values, seq_length)
     X_test, y_test = create_sequences(test_data['y_scaled'].values, seq_length)
 
     if len(X_train) == 0 or len(X_test) == 0:
         print("No sequences created for training or testing.")
         return np.zeros(len(test_data)), seq_length
 
-    # Create datasets and dataloaders
+    # **Create Datasets & Dataloaders**
     train_dataset = TimeSeriesDataset(X_train, y_train)
+    val_dataset = TimeSeriesDataset(X_val, y_val)
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
-    # Define the Transformer model
+    # **Define the Transformer model**
     transformer = TransformerModel(input_dim=1, embed_dim=32, num_heads=4, ff_dim=128, num_layers=4)
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(transformer.parameters(), lr=0.001)
 
-    # Training loop
+    # **Training loop with Validation**
+    best_val_loss = float("inf")
+    patience = 10  # Early stopping patience
+    epochs_no_improve = 0
+
     for epoch in range(100):
         transformer.train()
+        train_loss = 0.0
         for batch_X, batch_y in train_loader:
             optimizer.zero_grad()
             outputs = transformer(batch_X.unsqueeze(-1))
             loss = criterion(outputs.squeeze(), batch_y)
             loss.backward()
             optimizer.step()
+            train_loss += loss.item()
 
-    # Predictions on test data
+        # **Validation Loss Calculation**
+        transformer.eval()
+        val_loss = 0.0
+        with torch.no_grad():
+            for batch_X, batch_y in val_loader:
+                outputs = transformer(batch_X.unsqueeze(-1))
+                loss = criterion(outputs.squeeze(), batch_y)
+                val_loss += loss.item()
+
+        print(f"Epoch {epoch+1}: Train Loss = {train_loss/len(train_loader):.4f}, Val Loss = {val_loss/len(val_loader):.4f}")
+
+        # **Early Stopping Check**
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+            if epochs_no_improve >= patience:
+                print("Early stopping triggered!")
+                break
+
+    # **Predictions on Test Data**
     X_test_tensor = torch.tensor(X_test, dtype=torch.float32).unsqueeze(-1)
     transformer.eval()
     with torch.no_grad():
         transformer_pred_scaled = transformer(X_test_tensor).detach().numpy()
 
-    # Reverse scaling
-    # Reverse scaling
+    # **Reverse scaling**
     transformer_pred = reverse_scaling(transformer_pred_scaled, scaler)  # Use the StandardScaler instance
 
-    # Align predictions
+    # **Align Predictions**
     transformer_pred_aligned = transformer_pred[test_data['Mask'].iloc[:len(transformer_pred)] == 1]
 
     return transformer_pred_aligned, seq_length
+
 import os
 # Function to calculate metrics
 def calculate_metrics(y_true, y_pred):
@@ -299,7 +352,7 @@ def save_plot(y_true, y_pred, model_name, dates):
     plt.legend()
 
     # Save the plot in the results directory
-    plot_dir = os.path.join("model_results","Pulwama","Pachhar","American_B", model_name)
+    plot_dir = os.path.join("model_results","Narwal","American_A", model_name)
     os.makedirs(plot_dir, exist_ok=True)
     plot_path = os.path.join(plot_dir, f"{model_name}_actual_vs_predicted.png")
     plt.savefig(plot_path)
@@ -355,7 +408,7 @@ def main():
                     save_plot(y_true, pred, args.model, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Pulwama","Pachhar","American_B", args.model)
+                result_dir = os.path.join("model_results","Narwal","American_A", args.model)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{args.model}_results.txt")
                 with open(result_path, "w") as f:
@@ -402,7 +455,7 @@ def main():
                     save_plot(y_true, pred, model_name, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Pulwama","Pachhar", model_name)
+                result_dir = os.path.join("model_results","Narwal", model_name)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{model_name}_results.txt")
                 with open(result_path, "w") as f:
