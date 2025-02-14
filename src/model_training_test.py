@@ -17,7 +17,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import argparse  # Importing argparse
 # Load the dataset
-data = pd.read_csv(r'D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Narwal\American_dataset.csv')
+data = pd.read_csv(r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Narwal\Condition_dataset.csv')
 # Ensure proper datetime format for models requiring 'ds'
 data = data.rename(columns={"Date": "ds", "Avg Price (per kg)": "y"})
 data['ds'] = pd.to_datetime(data['ds'])
@@ -26,8 +26,8 @@ available_data = data[data['Mask'] == 1].copy()
 available_data.reset_index(inplace=True)
 
 # Split data for training and testing
-train_data = available_data[available_data['ds'] < '2024-09-01']
-test_data = available_data[available_data['ds'] >= '2024-09-01']
+train_data = available_data[available_data['ds'] < '2024-08-01']
+test_data = available_data[available_data['ds'] >= '2024-08-01']
 
 # Scale the target variable
 scaler = StandardScaler()
@@ -40,12 +40,12 @@ def reverse_scaling(scaled_values, scaler):
 
 # SARIMA Model
 def sarima_model(train_data, test_data):
-    p_values = range(0, 3)
+    p_values = range(0, 2)
     d_values = range(0, 2)
-    q_values = range(0, 3)
-    P_values = range(0, 3)
+    q_values = range(0, 2)
+    P_values = range(0, 2)
     D_values = range(0, 2)
-    Q_values = range(0, 3)
+    Q_values = range(0, 2)
     seasonal_periods = [12]
 
     param_grid = list(itertools.product(p_values, d_values, q_values, P_values, D_values, Q_values, seasonal_periods))
@@ -143,8 +143,8 @@ def random_forest_model(train_data, test_data):
     train_data = create_lagged_features(train_data.copy(), max_lag)
     test_data = create_lagged_features(test_data.copy(), max_lag)
 
-    train_subset = train_data[train_data['ds'] < '2023-09-01']
-    val_subset = train_data[(train_data['ds'] >= '2023-09-01') & (train_data['ds'] < '2024-09-01')]
+    train_subset = train_data[train_data['ds'] < '2023-08-01']
+    val_subset = train_data[(train_data['ds'] >= '2023-08-01') & (train_data['ds'] < '2024-08-01')]
 
     features = [f'y_lag{i}' for i in range(1, max_lag + 1)]
     rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
@@ -161,8 +161,8 @@ def xgboost_model(train_data, test_data):
     train_data = create_lagged_features(train_data.copy(), max_lag)
     test_data = create_lagged_features(test_data.copy(), max_lag)
 
-    train_subset = train_data[train_data['ds'] < '2023-09-01']
-    val_subset = train_data[(train_data['ds'] >= '2023-09-01') & (train_data['ds'] < '2024-09-01')]
+    train_subset = train_data[train_data['ds'] < '2023-08-01']
+    val_subset = train_data[(train_data['ds'] >= '2023-08-01') & (train_data['ds'] < '2024-08-01')]
 
     features = [f'y_lag{i}' for i in range(1, max_lag + 1)]
     xgb_model = XGBRegressor(n_estimators=100, random_state=42)
@@ -172,7 +172,9 @@ def xgboost_model(train_data, test_data):
     xgb_model.fit(train_data[final_xgb_features], train_data['y_scaled'])
     xgb_predictions_scaled = xgb_model.predict(test_data[final_xgb_features])
     return reverse_scaling(xgb_predictions_scaled, scaler)# Reverse scaling
+
 from tensorflow.keras.callbacks import EarlyStopping
+
 # LSTM Model
 def lstm_model(train_data, test_data):
     max_seq_length = 60  # Max possible lags (like RF/XGB)
@@ -182,8 +184,8 @@ def lstm_model(train_data, test_data):
     test_data = create_lagged_features(test_data.copy(), max_seq_length)
 
     # Split train into training and validation sets
-    train_subset = train_data[train_data['ds'] < '2023-09-01']
-    val_subset = train_data[(train_data['ds'] >= '2023-09-01') & (train_data['ds'] < '2024-09-01')]
+    train_subset = train_data[train_data['ds'] < '2023-08-01']
+    val_subset = train_data[(train_data['ds'] >= '2023-08-01') & (train_data['ds'] < '2024-08-01')]
 
     # Find the best sequence length
     seq_length = find_best_seq_length(train_subset, 5)
@@ -257,8 +259,8 @@ def transformer_model(train_data, test_data):
     test_data = create_lagged_features(test_data.copy(), max_seq_length)
 
     # **Train-Validation Split**
-    train_subset = train_data[train_data['ds'] < '2023-09-01']
-    val_subset = train_data[(train_data['ds'] >= '2023-09-01') & (train_data['ds'] < '2024-09-01')]
+    train_subset = train_data[train_data['ds'] < '2023-08-01']
+    val_subset = train_data[(train_data['ds'] >= '2023-08-01') & (train_data['ds'] < '2024-08-01')]
 
     # **Find Best Sequence Length**
     seq_length = find_best_seq_length(train_subset, 5)
@@ -352,7 +354,7 @@ def save_plot(y_true, y_pred, model_name, dates):
     plt.legend()
 
     # Save the plot in the results directory
-    plot_dir = os.path.join("model_results","Narwal","American_A", model_name)
+    plot_dir = os.path.join("model_results","Narwal","Condition", model_name)
     os.makedirs(plot_dir, exist_ok=True)
     plot_path = os.path.join(plot_dir, f"{model_name}_actual_vs_predicted.png")
     plt.savefig(plot_path)
@@ -408,7 +410,7 @@ def main():
                     save_plot(y_true, pred, args.model, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Narwal","American_A", args.model)
+                result_dir = os.path.join("model_results","Narwal","Condition", args.model)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{args.model}_results.txt")
                 with open(result_path, "w") as f:
@@ -417,7 +419,7 @@ def main():
                     f.write(f"MAE: {mae}\n")
                     f.write("Predictions:\n")
                     f.write("\n".join(map(str, pred)))
-
+                    
             except Exception as e:
                 print(f"Error running {args.model.upper()}: {e}")
         else:
