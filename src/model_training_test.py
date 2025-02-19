@@ -17,7 +17,11 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import argparse  # Importing argparse
 # Load the dataset
+<<<<<<< HEAD
 data = pd.read_csv(r'D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Narwal\Razakwadi_dataset.csv')
+=======
+data = pd.read_csv(r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Narwal\Razakwadi_dataset.csv')
+>>>>>>> 468eafcd640fa16da1a94df5071eb1aed20cf7ad
 # Ensure proper datetime format for models requiring 'ds'
 data = data.rename(columns={"Date": "ds", "Avg Price (per kg)": "y"})
 data['ds'] = pd.to_datetime(data['ds'])
@@ -40,12 +44,12 @@ def reverse_scaling(scaled_values, scaler):
 
 # SARIMA Model
 def sarima_model(train_data, test_data):
-    p_values = range(0, 3)
+    p_values = range(0, 2)
     d_values = range(0, 2)
-    q_values = range(0, 3)
-    P_values = range(0, 3)
+    q_values = range(0, 2)
+    P_values = range(0, 2)
     D_values = range(0, 2)
-    Q_values = range(0, 3)
+    Q_values = range(0, 2)
     seasonal_periods = [12]
 
     param_grid = list(itertools.product(p_values, d_values, q_values, P_values, D_values, Q_values, seasonal_periods))
@@ -172,7 +176,9 @@ def xgboost_model(train_data, test_data):
     xgb_model.fit(train_data[final_xgb_features], train_data['y_scaled'])
     xgb_predictions_scaled = xgb_model.predict(test_data[final_xgb_features])
     return reverse_scaling(xgb_predictions_scaled, scaler)# Reverse scaling
+
 from tensorflow.keras.callbacks import EarlyStopping
+
 # LSTM Model
 def lstm_model(train_data, test_data):
     max_seq_length = 60  # Max possible lags (like RF/XGB)
@@ -417,7 +423,7 @@ def main():
                     f.write(f"MAE: {mae}\n")
                     f.write("Predictions:\n")
                     f.write("\n".join(map(str, pred)))
-
+                    
             except Exception as e:
                 print(f"Error running {args.model.upper()}: {e}")
         else:

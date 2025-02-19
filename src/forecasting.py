@@ -102,9 +102,15 @@ def evaluate_model(model, X, y, scaler):
 
 def main():
     market = ["Narwal"]  # Markets to process
+<<<<<<< HEAD
     varieties = ["American", "Condition", "Hazratbali", "Razakwadi"]  # Varieties
     grades = ["A", "B"]  # Grades, if applicable
     forecast_days = 10  # Forecast for 10 days
+=======
+    varieties = ["American", "Condition", "Hazratbali","Razakwadi"]  # Corrected variety name
+    grades = ["A", "B"]  # Grades A and B
+    forecast_days = 10  # Forecast for 15 days
+>>>>>>> 468eafcd640fa16da1a94df5071eb1aed20cf7ad
     max_seq_length = 50  # Maximum sequence length to search for
 
     results = {}
