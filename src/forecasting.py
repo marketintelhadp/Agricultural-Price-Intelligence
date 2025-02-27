@@ -47,7 +47,16 @@ def find_best_seq_length(data, max_seq_length):
 
         # Evaluate the model
         predictions = temp_model.predict(X.reshape((X.shape[0], X.shape[1], 1)))
+        # Check for NaN in predictions or in the computed mse
+        if np.isnan(predictions).any():
+            logging.warning(f"Sequence length {seq_length}: predictions contain NaN, skipping this length.")
+            continue
+
         mse = mean_squared_error(y, predictions)
+        if np.isnan(mse):
+            logging.warning(f"Sequence length {seq_length}: computed MSE is NaN, skipping this length.")
+            continue
+
         if mse < best_mse:
             best_mse, best_seq_length = mse, seq_length
 
@@ -102,16 +111,10 @@ def evaluate_model(model, X, y, scaler):
 
 def main():
     market = ["Narwal"]  # Markets to process
-<<<<<<< HEAD
-    varieties = ["American", "Condition", "Hazratbali", "Razakwadi"]  # Varieties
+    varieties = ["Delicious"]  # Varieties
     grades = ["A", "B"]  # Grades, if applicable
     forecast_days = 10  # Forecast for 10 days
-=======
-    varieties = ["American", "Condition", "Hazratbali","Razakwadi"]  # Corrected variety name
-    grades = ["A", "B"]  # Grades A and B
-    forecast_days = 10  # Forecast for 15 days
->>>>>>> 468eafcd640fa16da1a94df5071eb1aed20cf7ad
-    max_seq_length = 50  # Maximum sequence length to search for
+    max_seq_length = 30  # Maximum sequence length to search for
 
     results = {}
 
