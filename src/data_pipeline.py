@@ -180,9 +180,9 @@ def visualize_data(df, output_folder):
 # Main function
 def main():
     # File path to the dataset
-    file_path = r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\NarwalFinal.xlsx"
-    output_folder = r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Narwal"
-    eda_folder = r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\Data_exploration_results\Narwal"
+    file_path = r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\SoporeFinal.xlsx"
+    output_folder = r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Sopore"
+    eda_folder = r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\Data_exploration_results\Sopore"
     
     # Load data
     try:

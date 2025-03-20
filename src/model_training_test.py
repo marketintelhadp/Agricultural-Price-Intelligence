@@ -2,10 +2,13 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import TimeSeriesSplit
 import seaborn as sns
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
+from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from sklearn.metrics import mean_squared_error, mean_absolute_error
@@ -17,7 +20,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import argparse  # Importing argparse
 # Load the dataset
-data = pd.read_csv(r'D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Narwal\Delicious_dataset.csv')
+data = pd.read_csv(r'D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Sopore\Delicious_A_dataset.csv')
 
 #data = pd.read_csv(r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Narwal\Razakwadi_dataset.csv')
 # Ensure proper datetime format for models requiring 'ds'
@@ -139,10 +142,10 @@ def find_best_seq_length(train_data, max_seq_length):
             best_mse, best_length = mse, seq_length
     return best_length
 
-# Random Forest Model
 def random_forest_model(train_data, test_data):
-    max_lag = 60
+    max_lag = 30
     train_data = create_lagged_features(train_data.copy(), max_lag)
+    
     test_data = create_lagged_features(test_data.copy(), max_lag)
 
     train_subset = train_data[train_data['ds'] < '2023-08-01']
@@ -153,7 +156,7 @@ def random_forest_model(train_data, test_data):
     best_lags_rf, _ = find_best_lags(rf_model, train_subset, val_subset, features)
 
     final_rf_features = features[:best_lags_rf]
-    rf_model.fit(train_data[final_rf_features], train_data['y_scaled'])
+    rf_model.fit(train_subset[final_rf_features], train_subset['y_scaled'])
     rf_predictions_scaled = rf_model.predict(test_data[final_rf_features])
     return reverse_scaling(rf_predictions_scaled, scaler) # Reverse scaling
 
@@ -171,15 +174,16 @@ def xgboost_model(train_data, test_data):
     best_lags_xgb, _ = find_best_lags(xgb_model, train_subset, val_subset, features)
 
     final_xgb_features = features[:best_lags_xgb]
-    xgb_model.fit(train_data[final_xgb_features], train_data['y_scaled'])
+    xgb_model.fit(train_subset[final_xgb_features], train_subset['y_scaled'])
     xgb_predictions_scaled = xgb_model.predict(test_data[final_xgb_features])
     return reverse_scaling(xgb_predictions_scaled, scaler)# Reverse scaling
 
-from tensorflow.keras.callbacks import EarlyStopping
+
+import tensorflow as tf
 
 # LSTM Model
 def lstm_model(train_data, test_data):
-    max_seq_length = 60  # Max possible lags (like RF/XGB)
+    max_seq_length = 30  # Max possible lags (like RF/XGB)
     
     # Create lagged features (consistent with RF & XGB)
     train_data = create_lagged_features(train_data.copy(), max_seq_length)
@@ -209,7 +213,7 @@ def lstm_model(train_data, test_data):
     model.compile(optimizer='adam', loss='mse')
 
     # Early stopping to prevent overfitting
-    early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+    early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
     # Train the model with validation data
     model.fit(X_train.reshape((-1, seq_length, 1)), y_train,
@@ -356,7 +360,7 @@ def save_plot(y_true, y_pred, model_name, dates):
     plt.legend()
 
     # Save the plot in the results directory
-    plot_dir = os.path.join("model_results","Narwal","Delicious", model_name)
+    plot_dir = os.path.join("model_results","Sopore","Delicious_A", model_name)
     os.makedirs(plot_dir, exist_ok=True)
     plot_path = os.path.join(plot_dir, f"{model_name}_actual_vs_predicted.png")
     plt.savefig(plot_path)
@@ -412,7 +416,7 @@ def main():
                     save_plot(y_true, pred, args.model, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Narwal","Delicious", args.model)
+                result_dir = os.path.join("model_results","Sopore","Delicious_A", args.model)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{args.model}_results.txt")
                 with open(result_path, "w") as f:
@@ -459,7 +463,7 @@ def main():
                     save_plot(y_true, pred, model_name, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Narwal", model_name)
+                result_dir = os.path.join("model_results","Sopore", model_name)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{model_name}_results.txt")
                 with open(result_path, "w") as f:
