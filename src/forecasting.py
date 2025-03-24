@@ -110,8 +110,8 @@ def evaluate_model(model, X, y, scaler):
     return mse, mae
 
 def main():
-    market = ["Narwal"]  # Markets to process
-    varieties = ["Delicious"]  # Varieties
+    market = ["Sopore"]  # Markets to process
+    varieties = ["Delicious","American","Maharaji"]  # Varieties
     grades = ["A", "B"]  # Grades, if applicable
     forecast_days = 10  # Forecast for 10 days
     max_seq_length = 30  # Maximum sequence length to search for
@@ -184,7 +184,7 @@ def main():
                 # Otherwise, iterate over grades
                 for grade in grades:
                     logging.info(f"Processing {m} {variety} Grade {grade}...")
-                    data_path = f"data/raw/processed/Pulwama/{m}/{variety}_{grade}_dataset.csv"
+                    data_path = f"data/raw/processed/{m}/{variety}_{grade}_dataset.csv"
                     if not os.path.exists(data_path):
                         logging.warning(f"File not found: {data_path}")
                         continue
@@ -208,9 +208,9 @@ def main():
 
                     model, scaler = train_lstm(data, best_seq_length)
 
-                    model_forecasts_dir = f"model_forecasts/Pulwama/{m}/{variety}/{grade}"
+                    model_forecasts_dir = f"model_forecasts/{m}/{variety}/{grade}"
                     os.makedirs(model_forecasts_dir, exist_ok=True)
-                    model_path = f"models/Pulwama/{m}/{variety}/{grade}/lstm_{variety}_grade_{grade}.h5"
+                    model_path = f"models/{m}/{variety}/{grade}/lstm_{variety}_grade_{grade}.h5"
                     os.makedirs(os.path.dirname(model_path), exist_ok=True)
                     logging.info(f"Saving model to {model_path}...")
                     model.save(model_path)
@@ -229,7 +229,7 @@ def main():
                     plt.xlabel('Days')
                     plt.ylabel('Price (per kg)')
                     plt.legend()
-                    plot_path = f"model_forecasts/Pulwama/{m}/{variety}/{grade}/{variety}_grade_{grade}_forecast.png"
+                    plot_path = f"model_forecasts/{m}/{variety}/{grade}/{variety}_grade_{grade}_forecast.png"
                     plt.savefig(plot_path)
                     plt.close()
                     logging.info(f"Forecast for {variety} Grade {grade}: {predictions}")
@@ -239,7 +239,7 @@ def main():
                         'Lower Bound': lower_bound,
                         'Upper Bound': upper_bound
                     })
-                    forecast_file_path = f"model_forecasts/Pulwama/{m}/{variety}/{grade}/{variety}_Grade_{grade}_forecasts.csv"
+                    forecast_file_path = f"model_forecasts/{m}/{variety}/{grade}/{variety}_Grade_{grade}_forecasts.csv"
                     forecast_df.to_csv(forecast_file_path, index=False)
                     logging.info(f"Forecasts saved to {forecast_file_path}")
 

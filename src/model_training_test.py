@@ -20,7 +20,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import argparse  # Importing argparse
 # Load the dataset
-data = pd.read_csv(r'D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Sopore\Delicious_A_dataset.csv')
+data = pd.read_csv(r'D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Sopore\Maharaji_B_dataset.csv')
 
 #data = pd.read_csv(r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Narwal\Razakwadi_dataset.csv')
 # Ensure proper datetime format for models requiring 'ds'
@@ -360,7 +360,7 @@ def save_plot(y_true, y_pred, model_name, dates):
     plt.legend()
 
     # Save the plot in the results directory
-    plot_dir = os.path.join("model_results","Sopore","Delicious_A", model_name)
+    plot_dir = os.path.join("model_results","Sopore","Maharaji_B", model_name)
     os.makedirs(plot_dir, exist_ok=True)
     plot_path = os.path.join(plot_dir, f"{model_name}_actual_vs_predicted.png")
     plt.savefig(plot_path)
@@ -416,7 +416,7 @@ def main():
                     save_plot(y_true, pred, args.model, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Sopore","Delicious_A", args.model)
+                result_dir = os.path.join("model_results","Sopore","Maharaji_B", args.model)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{args.model}_results.txt")
                 with open(result_path, "w") as f:
