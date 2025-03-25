@@ -175,3 +175,6 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+data/real_time/*
+!data/real_time/.keep  # or allow latest CSV if needed
