@@ -7,7 +7,6 @@ __pycache__/
 env/
 myenv/
 *.dist-info/
-*.exe
 
 # C extensions
 *.so
@@ -175,6 +174,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-
-data/real_time/*
-!data/real_time/.keep  # or allow latest CSV if needed
