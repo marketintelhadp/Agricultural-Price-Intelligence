@@ -13,7 +13,7 @@ from selenium.webdriver.chrome.options import Options
 # === SETTINGS ===
 username = "shaheen_skuast"
 password = "Kkg@1234"
-download_dir = os.path.abspath(r"D:\ML Repositories\Price_forecasting_project\data\real_time")
+download_dir = os.path.abspath(r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\real_time")
 
 # === CONFIGURE SELENIUM ===
 chrome_options = Options()
