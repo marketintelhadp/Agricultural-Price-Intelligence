@@ -2,6 +2,8 @@
 
 import os
 import time
+import glob
+import pandas as pd  # Added import for pandas
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -9,7 +11,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
+
 # === SETTINGS ===
 username = "shaheen_skuast"
 password = "Kkg@1234"
@@ -90,7 +92,7 @@ try:
     select.select_by_visible_text("Apple")
     time.sleep(2)
     
-        # Step 7: Click export icon
+    # Step 7: Click export icon
     print("📁 Clicking export icon...")
     
     # Locate the export icon based on its SVG path and click its parent
@@ -98,9 +100,9 @@ try:
         (By.XPATH, "//button//*[name()='svg' and contains(@viewBox, '0 0 576 512')]/ancestor::button")
     ))
     export_icon.click()
+    
     # Step 8: Click 'CSV' from dropdown
     print("⬇️ Clicking 'CSV' option...")
-
     csv_button = wait.until(EC.element_to_be_clickable((
         By.XPATH,
         "//button[.//text()[normalize-space()='CSV']]"
@@ -111,16 +113,12 @@ try:
     time.sleep(10)  # Allow time for download
     
     # Check download folder for CSV file
-    import glob
-
     csv_files = glob.glob(os.path.join(download_dir, "*.csv"))
     if csv_files:
         print(f"📄 CSV Downloaded: {csv_files[0]}")
     else:
         print("⚠️ No CSV file found in download folder!")
         
-    print("✅ CSV export clicked. Waiting for download...")
-
     def wait_for_download(folder, timeout=30):
         seconds = 0
         while not any(f.endswith(".csv") for f in os.listdir(folder)):
@@ -132,8 +130,18 @@ try:
         print("✅ CSV file detected.")
         return True
 
-    # Now wait for the file to appear
-    wait_for_download(download_dir)
+    # Wait for the file to appear and process it
+    if wait_for_download(download_dir):
+        csv_files = glob.glob(os.path.join(download_dir, "*.csv"))
+        if csv_files:
+            csv_file = csv_files[0]
+            df = pd.read_csv(csv_file)
+            # Convert the Date/Time column from epoch seconds to date format
+            df['Date/Time'] = pd.to_datetime(df['Date/Time'], unit='s').dt.date
+            df.to_csv(csv_file, index=False)
+            print("✅ CSV file updated with converted Date/Time column.")
+        else:
+            print("⚠️ CSV file not found after waiting.")
 
 except Exception as e:
     print(f"❌ ERROR: {e}")
