@@ -1,0 +1,187 @@
+Market,Variety,Grade,Model,MSE,MAE
+Narwal,American,NA,lstm,105.1055021,7.172125093
+Narwal,American,NA,prophet,1068.863813,25.82281118
+Narwal,American,NA,rf,728.1618669,19.08818182
+Narwal,American,NA,sarima,831.5003442,20.75345793
+Narwal,American,NA,transformer,878.0171001,21.20158702
+Narwal,American,NA,xgb,920.6410122,22.02163244
+Narwal,Condition,NA,lstm,6.731081239,1.608968209
+Narwal,Condition,NA,prophet,435.1552134,16.53170518
+Narwal,Condition,NA,rf,7.363466471,1.649591612
+Narwal,Condition,NA,sarima,34.6947139,4.908496176
+Narwal,Condition,NA,transformer,6.308565592,1.279894444
+Narwal,Condition,NA,xgb,7.445171835,1.691852723
+Narwal,Delicious,NA,lstm,63.43102229,4.937807853
+Narwal,Delicious,NA,prophet,1541.721892,33.66375338
+Narwal,Delicious,NA,rf,165.9347529,8.758479253
+Narwal,Delicious,NA,sarima,1244.451504,28.54534501
+Narwal,Delicious,NA,transformer,281.8544364,11.85604072
+Narwal,Delicious,NA,xgb,242.6743233,10.42911038
+Narwal,Hazratbali,NA,lstm,33.59610351,3.349066053
+Narwal,Hazratbali,NA,prophet,41.44917705,4.961376751
+Narwal,Hazratbali,NA,rf,29.55008443,2.969068232
+Narwal,Hazratbali,NA,sarima,182.6887366,11.20712401
+Narwal,Hazratbali,NA,transformer,31.98551001,3.489056042
+Narwal,Hazratbali,NA,xgb,19.00639122,2.170878864
+Narwal,Razakwadi,NA,lstm,21.07391853,3.832945175
+Narwal,Razakwadi,NA,prophet,32.39886554,4.129543806
+Narwal,Razakwadi,NA,rf,21.12245968,2.639996825
+Narwal,Razakwadi,NA,sarima,96.47388905,8.725735675
+Narwal,Razakwadi,NA,transformer,28.91867061,3.438554544
+Narwal,Razakwadi,NA,xgb,403.0755281,15.29509652
+Pulwama_Pachhar,American,A,lstm,0.537213589,0.611055006
+Pulwama_Pachhar,American,A,prophet,102.115951,9.544246829
+Pulwama_Pachhar,American,A,rf,10.69041619,2.870843064
+Pulwama_Pachhar,American,A,sarima,39.31439787,5.517496195
+Pulwama_Pachhar,American,A,transformer,0.27963838,0.328026982
+Pulwama_Pachhar,American,A,xgb,7.09934511,1.716034123
+Pulwama_Pachhar,American,B,lstm,0.400827662,0.312625777
+Pulwama_Pachhar,American,B,prophet,129.4410125,10.74501916
+Pulwama_Pachhar,American,B,rf,2.575226551,1.561899017
+Pulwama_Pachhar,American,B,sarima,15.08188348,3.337038968
+Pulwama_Pachhar,American,B,transformer,1.572895663,1.067367826
+Pulwama_Pachhar,American,B,xgb,8.175887392,2.493098525
+Pulwama_Pachhar,Delicious,A,lstm,1.0631241,0.398642842
+Pulwama_Pachhar,Delicious,A,prophet,852.7102925,23.88497979
+Pulwama_Pachhar,Delicious,A,rf,1.60712135,1.090380944
+Pulwama_Pachhar,Delicious,A,sarima,257.1317784,14.47152829
+Pulwama_Pachhar,Delicious,A,transformer,1.128486608,0.640360886
+Pulwama_Pachhar,Delicious,A,xgb,1.67991249,1.114444442
+Pulwama_Pachhar,Delicious,B,lstm,0.617162709,0.603738607
+Pulwama_Pachhar,Delicious,B,prophet,421.6180894,16.61790306
+Pulwama_Pachhar,Delicious,B,rf,3.470976673,1.372130139
+Pulwama_Pachhar,Delicious,B,sarima,303.9916823,16.81122413
+Pulwama_Pachhar,Delicious,B,transformer,0.477808732,0.265957399
+Pulwama_Pachhar,Delicious,B,xgb,15.04187045,3.492256932
+Pulwama_Pachhar,Kullu Delicious,A,lstm,0.343295957,0.270150551
+Pulwama_Pachhar,Kullu Delicious,A,prophet,161.7865083,12.51978201
+Pulwama_Pachhar,Kullu Delicious,A,rf,1.455183259,0.68628105
+Pulwama_Pachhar,Kullu Delicious,A,sarima,9.881857487,2.716760882
+Pulwama_Pachhar,Kullu Delicious,A,transformer,1.170221549,0.5049679
+Pulwama_Pachhar,Kullu Delicious,A,xgb,1.729509505,0.727649504
+Pulwama_Pachhar,Kullu Delicious,B,lstm,0.11523464,0.33946228
+Pulwama_Pachhar,Kullu Delicious,B,prophet,53.15573378,7.271725232
+Pulwama_Pachhar,Kullu Delicious,B,rf,1.369703724,0.224193777
+Pulwama_Pachhar,Kullu Delicious,B,sarima,6.270233699,7.915840313
+Pulwama_Pachhar,Kullu Delicious,B,transformer,0.228401237,0.47791342
+Pulwama_Pachhar,Kullu Delicious,B,xgb,0.162963092,0.123470553
+Pulwama_Prichoo,American,A,lstm,6.629970161,1.195653213
+Pulwama_Prichoo,American,A,prophet,117.0188997,9.966124833
+Pulwama_Prichoo,American,A,rf,8.022667604,1.875111829
+Pulwama_Prichoo,American,A,sarima,147.2330776,11.74124975
+Pulwama_Prichoo,American,A,transformer,7.028890042,1.32060303
+Pulwama_Prichoo,American,A,xgb,8.374942661,1.872646582
+Pulwama_Prichoo,American,B,lstm,8.363346829,1.418595368
+Pulwama_Prichoo,American,B,prophet,95.98672928,8.297300615
+Pulwama_Prichoo,American,B,rf,7.917451922,1.688978372
+Pulwama_Prichoo,American,B,sarima,83.83300912,8.498997738
+Pulwama_Prichoo,American,B,transformer,7.757789442,1.247224373
+Pulwama_Prichoo,American,B,xgb,7.632703593,1.497228372
+Pulwama_Prichoo,Delicious,A,lstm,2.746387705,0.828014937
+Pulwama_Prichoo,Delicious,A,prophet,236.9942501,11.58876961
+Pulwama_Prichoo,Delicious,A,rf,9.943695727,2.5206414
+Pulwama_Prichoo,Delicious,A,sarima,171.4589741,11.49683034
+Pulwama_Prichoo,Delicious,A,transformer,12.13793728,2.681251219
+Pulwama_Prichoo,Delicious,A,xgb,9.688699961,2.476131522
+Pulwama_Prichoo,Delicious,B,lstm,6.728964604,1.377297265
+Pulwama_Prichoo,Delicious,B,prophet,120.4555652,9.355326703
+Pulwama_Prichoo,Delicious,B,rf,12.61637556,1.918624038
+Pulwama_Prichoo,Delicious,B,sarima,187.1652304,10.53997126
+Pulwama_Prichoo,Delicious,B,transformer,6.464244629,1.181595739
+Pulwama_Prichoo,Delicious,B,xgb,12.98891418,2.464267751
+Pulwama_Prichoo,Kullu Delicious,A,lstm,14.15550497,2.312021329
+Pulwama_Prichoo,Kullu Delicious,A,prophet,302.3790685,16.37313197
+Pulwama_Prichoo,Kullu Delicious,A,rf,19.49969009,2.270493232
+Pulwama_Prichoo,Kullu Delicious,A,sarima,51.97092885,5.24176837
+Pulwama_Prichoo,Kullu Delicious,A,transformer,16.99574522,2.886354907
+Pulwama_Prichoo,Kullu Delicious,A,xgb,18.98836572,2.269357189
+Pulwama_Prichoo,Kullu Delicious,B,lstm,5.948745211,1.60741193
+Pulwama_Prichoo,Kullu Delicious,B,prophet,325.5876396,17.33740557
+Pulwama_Prichoo,Kullu Delicious,B,rf,12.15632037,1.810273705
+Pulwama_Prichoo,Kullu Delicious,B,sarima,48.96631661,5.0592413
+Pulwama_Prichoo,Kullu Delicious,B,transformer,7.370127054,1.856731221
+Pulwama_Prichoo,Kullu Delicious,B,xgb,15.99191857,3.319377284
+Shopian,American,A,lstm,1.405111925,0.554715884
+Shopian,American,A,prophet,260.7505874,13.14311722
+Shopian,American,A,rf,12.15546318,2.754989045
+Shopian,American,A,sarima,63.36137078,6.060113894
+Shopian,American,A,transformer,4.190388968,1.798067061
+Shopian,American,A,xgb,14.49761897,2.939222523
+Shopian,American,B,lstm,1.599458405,0.522846801
+Shopian,American,B,prophet,143.3337314,10.41275727
+Shopian,American,B,rf,10.66441588,2.258405317
+Shopian,American,B,sarima,80.30929194,8.722675245
+Shopian,American,B,transformer,3.26712467,1.617090526
+Shopian,American,B,xgb,35.00060922,5.295527427
+Shopian,Delicious,A,lstm,2.544284178,0.812971097
+Shopian,Delicious,A,prophet,344.997408,16.32078159
+Shopian,Delicious,A,rf,6.028711764,1.57966137
+Shopian,Delicious,A,sarima,77.45948638,8.5620292
+Shopian,Delicious,A,transformer,2.156239642,0.838145183
+Shopian,Delicious,A,xgb,6.279959144,1.569589721
+Shopian,Delicious,B,lstm,2.550923074,0.8166802
+Shopian,Delicious,B,prophet,109.5121775,8.603649567
+Shopian,Delicious,B,rf,3.228540693,1.066755386
+Shopian,Delicious,B,sarima,23.77326701,4.287749175
+Shopian,Delicious,B,transformer,2.747411793,0.99984671
+Shopian,Delicious,B,xgb,3.265751487,1.063263151
+Shopian,Kullu,A,lstm,8.475225006,1.26996049
+Shopian,Kullu,A,prophet,623.5563573,24.17631865
+Shopian,Kullu,A,rf,17.48122654,2.29365849
+Shopian,Kullu,A,sarima,136.7255245,8.91634884
+Shopian,Kullu,A,transformer,9.154564005,1.750090903
+Shopian,Kullu,A,xgb,18.24310956,2.249361536
+Shopian,Kullu,B,lstm,2.268930674,0.507607185
+Shopian,Kullu,B,prophet,196.2164496,13.04238763
+Shopian,Kullu,B,rf,5.72078924,0.841340334
+Shopian,Kullu,B,sarima,9.448101765,2.547458705
+Shopian,Kullu,B,transformer,2.315483125,0.741276645
+Shopian,Kullu,B,xgb,6.69012114,0.771346797
+Shopian,Maharaji,A,lstm,1.25527825,1.120392007
+Shopian,Maharaji,A,prophet,60.29413446,6.877123474
+Shopian,Maharaji,A,rf,1.620517381,0.254771922
+Shopian,Maharaji,A,sarima,7.940463366,2.593093558
+Shopian,Maharaji,A,transformer,2.406969774,1.551441193
+Shopian,Maharaji,A,xgb,2.968533956,0.312551577
+Shopian,Maharaji,B,lstm,0.134309495,0.284165655
+Shopian,Maharaji,B,prophet,87.98294386,7.490486513
+Shopian,Maharaji,B,rf,1.20997516,0.239956361
+Shopian,Maharaji,B,sarima,2.503511962,1.241412587
+Shopian,Maharaji,B,transformer,0.721003559,0.817069171
+Shopian,Maharaji,B,xgb,1.593377055,0.280875738
+Sopore,American,A,lstm,10.10671736,2.25971432
+Sopore,American,A,prophet,459.4880101,16.66138544
+Sopore,American,A,rf,28.13361486,4.021225232
+Sopore,American,A,sarima,131.8108965,9.998945579
+Sopore,American,A,transformer,17.26740807,3.217990894
+Sopore,American,A,xgb,22.93505558,3.422555959
+Sopore,American,B,lstm,30.01337554,3.827894238
+Sopore,American,B,prophet,379.1087186,16.51816703
+Sopore,American,B,rf,71.63766342,6.776484515
+Sopore,American,B,sarima,213.848205,12.83863237
+Sopore,American,B,transformer,64.45452029,6.840920176
+Sopore,American,B,xgb,115.8510734,8.809980541
+Sopore,Delicious,A,lstm,11.01086444,2.121782791
+Sopore,Delicious,A,prophet,487.4622972,16.37249031
+Sopore,Delicious,A,rf,12.67909063,2.469689556
+Sopore,Delicious,A,sarima,93.91354599,8.843739772
+Sopore,Delicious,A,transformer,18.59922386,3.436685682
+Sopore,Delicious,A,xgb,13.95491606,2.462430723
+Sopore,Delicious,B,lstm,26.39311378,3.984067834
+Sopore,Delicious,B,prophet,408.5302626,17.77309748
+Sopore,Delicious,B,rf,39.69986018,5.219024419
+Sopore,Delicious,B,sarima,300.4432523,14.73549762
+Sopore,Delicious,B,transformer,39.73034759,5.082049568
+Sopore,Delicious,B,xgb,43.59308589,5.298571128
+Sopore,Maharaji,A,lstm,0.044492289,0.129650286
+Sopore,Maharaji,A,prophet,9.584662584,2.740138201
+Sopore,Maharaji,A,rf,1.177110906,0.526914865
+Sopore,Maharaji,A,sarima,0.044801048,0.176231483
+Sopore,Maharaji,A,transformer,0.061937953,0.193069701
+Sopore,Maharaji,A,xgb,1.675504931,0.66198918
+Sopore,Maharaji,B,lstm,0.071277495,0.197446632
+Sopore,Maharaji,B,prophet,13.93689709,3.105533788
+Sopore,Maharaji,B,rf,0.518702247,0.42625364
+Sopore,Maharaji,B,sarima,0.028748008,0.145481576
+Sopore,Maharaji,B,transformer,0.704547739,0.78353124
+Sopore,Maharaji,B,xgb,0.830221623,0.589915848
