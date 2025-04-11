@@ -20,7 +20,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import argparse  # Importing argparse
 # Load the dataset
-data = pd.read_csv(r'D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\raw\processed\Sopore\Maharaji_B_dataset.csv')
+data = pd.read_csv(r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Shopian\Cherry_Small_dataset.csv')
 
 #data = pd.read_csv(r'D:\ML Repositories\Price_forecasting_project\data\raw\processed\Narwal\Razakwadi_dataset.csv')
 # Ensure proper datetime format for models requiring 'ds'
@@ -31,8 +31,8 @@ available_data = data[data['Mask'] == 1].copy()
 available_data.reset_index(inplace=True)
 
 # Split data for training and testing
-train_data = available_data[available_data['ds'] < '2024-08-01']
-test_data = available_data[available_data['ds'] >= '2024-08-01']
+train_data = available_data[available_data['ds'] < '2024-05-20']
+test_data = available_data[available_data['ds'] >= '2024-05-20']
 
 # Scale the target variable
 scaler = StandardScaler()
@@ -148,8 +148,8 @@ def random_forest_model(train_data, test_data):
     
     test_data = create_lagged_features(test_data.copy(), max_lag)
 
-    train_subset = train_data[train_data['ds'] < '2023-08-01']
-    val_subset = train_data[(train_data['ds'] >= '2023-08-01') & (train_data['ds'] < '2024-08-01')]
+    train_subset = train_data[train_data['ds'] < '2023-05-20']
+    val_subset = train_data[(train_data['ds'] >= '2023-05-20') & (train_data['ds'] < '2024-05-20')]
 
     features = [f'y_lag{i}' for i in range(1, max_lag + 1)]
     rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
@@ -166,8 +166,8 @@ def xgboost_model(train_data, test_data):
     train_data = create_lagged_features(train_data.copy(), max_lag)
     test_data = create_lagged_features(test_data.copy(), max_lag)
 
-    train_subset = train_data[train_data['ds'] < '2023-08-01']
-    val_subset = train_data[(train_data['ds'] >= '2023-08-01') & (train_data['ds'] < '2024-08-01')]
+    train_subset = train_data[train_data['ds'] < '2023-05-20']
+    val_subset = train_data[(train_data['ds'] >= '2023-05-20') & (train_data['ds'] < '2024-05-20')]
 
     features = [f'y_lag{i}' for i in range(1, max_lag + 1)]
     xgb_model = XGBRegressor(n_estimators=100, random_state=42)
@@ -190,8 +190,8 @@ def lstm_model(train_data, test_data):
     test_data = create_lagged_features(test_data.copy(), max_seq_length)
 
     # Split train into training and validation sets
-    train_subset = train_data[train_data['ds'] < '2023-08-01']
-    val_subset = train_data[(train_data['ds'] >= '2023-08-01') & (train_data['ds'] < '2024-08-01')]
+    train_subset = train_data[train_data['ds'] < '2023-05-20']
+    val_subset = train_data[(train_data['ds'] >= '2023-05-20') & (train_data['ds'] < '2024-05-20')]
 
     # Find the best sequence length
     seq_length = find_best_seq_length(train_subset, 5)
@@ -265,8 +265,8 @@ def transformer_model(train_data, test_data):
     test_data = create_lagged_features(test_data.copy(), max_seq_length)
 
     # **Train-Validation Split**
-    train_subset = train_data[train_data['ds'] < '2023-08-01']
-    val_subset = train_data[(train_data['ds'] >= '2023-08-01') & (train_data['ds'] < '2024-08-01')]
+    train_subset = train_data[train_data['ds'] < '2023-05-20']
+    val_subset = train_data[(train_data['ds'] >= '2023-05-20') & (train_data['ds'] < '2024-05-20')]
 
     # **Find Best Sequence Length**
     seq_length = find_best_seq_length(train_subset, 5)
@@ -360,7 +360,7 @@ def save_plot(y_true, y_pred, model_name, dates):
     plt.legend()
 
     # Save the plot in the results directory
-    plot_dir = os.path.join("model_results","Sopore","Maharaji_B", model_name)
+    plot_dir = os.path.join("model_results","Shopian","Cherry_Small", model_name)
     os.makedirs(plot_dir, exist_ok=True)
     plot_path = os.path.join(plot_dir, f"{model_name}_actual_vs_predicted.png")
     plt.savefig(plot_path)
@@ -416,7 +416,7 @@ def main():
                     save_plot(y_true, pred, args.model, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Sopore","Maharaji_B", args.model)
+                result_dir = os.path.join("model_results","Shopian","Cherry_Small", args.model)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{args.model}_results.txt")
                 with open(result_path, "w") as f:
@@ -463,7 +463,7 @@ def main():
                     save_plot(y_true, pred, model_name, dates)
 
                 # Save the results to a file
-                result_dir = os.path.join("model_results","Sopore", model_name)
+                result_dir = os.path.join("model_results","Shopian", model_name)
                 os.makedirs(result_dir, exist_ok=True)
                 result_path = os.path.join(result_dir, f"{model_name}_results.txt")
                 with open(result_path, "w") as f:
