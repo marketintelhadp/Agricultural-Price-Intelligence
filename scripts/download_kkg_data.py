@@ -17,6 +17,16 @@ username = "shaheen_skuast"
 password = "Kkg@1234"
 download_dir = os.path.abspath(r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\real_time")
 
+# Clear the download directory before starting
+if os.path.exists(download_dir):
+    for f in os.listdir(download_dir):
+        file_path = os.path.join(download_dir, f)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except Exception as e:
+            print(f"⚠️ Could not delete file {file_path}: {e}")
+
 # === CONFIGURE SELENIUM ===
 chrome_options = Options()
 chrome_options.add_experimental_option("prefs", {
@@ -121,14 +131,20 @@ try:
         
     def wait_for_download(folder, timeout=30):
         seconds = 0
-        while not any(f.endswith(".csv") for f in os.listdir(folder)):
-            time.sleep(1)
+        while True:
+            files = os.listdir(folder)
+            if any(f.endswith(".crdownload") for f in files):
+                # Still downloading
+                time.sleep(1)
+            elif any(f.endswith(".csv") for f in files):
+                print("✅ CSV file detected and download complete.")
+                return True
+            else:
+                time.sleep(1)
             seconds += 1
             if seconds > timeout:
                 print("⚠️ Timeout: CSV file not downloaded.")
                 return False
-        print("✅ CSV file detected.")
-        return True
 
     # Wait for the file to appear and process it
     if wait_for_download(download_dir):
@@ -137,11 +153,12 @@ try:
             csv_file = csv_files[0]
             df = pd.read_csv(csv_file)
             # Convert the Date/Time column from epoch seconds to date format
-            df['Date/Time'] = pd.to_datetime(df['Date/Time'], unit='s').dt.date
+            df['Date/Time'] = pd.to_datetime(df['Date/Time'], unit = 's').dt.date
             df.to_csv(csv_file, index=False)
             print("✅ CSV file updated with converted Date/Time column.")
         else:
             print("⚠️ CSV file not found after waiting.")
+
 
 except Exception as e:
     print(f"❌ ERROR: {e}")
