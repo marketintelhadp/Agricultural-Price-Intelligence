@@ -110,9 +110,9 @@ def evaluate_model(model, X, y, scaler):
     return mse, mae
 
 def main():
-    market = ["Narwal"]  # Markets to process
-    varieties = ["Cherry"]  # Varieties
-    grades = ["Large", "Medium","Small"]  # Grades, if applicable
+    market = ["Azadpur"]  # Markets to process
+    varieties = ["Makhmali","Misri"]  # Varieties
+    grades = ["Super", "Special","Fancy"]  # Grades, if applicable
     forecast_days = 10  # Forecast for 10 days
     max_seq_length = 30  # Maximum sequence length to search for
 
