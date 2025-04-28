@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # 2. Load the Dataset
 # ------------------------------------------------------------------------------
 def load_data(file_path):
-    df = pd.read_csv(file_path)
+    df = pd.read_excel(file_path)
 
     # Convert 'Date' to datetime
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
@@ -156,9 +156,9 @@ def visualize_data(df, output_folder):
 # 7. Main Function
 # ------------------------------------------------------------------------------
 def main():
-    file_path = r"data/raw/AzadpurCherry.csv"
-    output_folder = r"data/raw/processed/Azadpur"
-    eda_folder = r"Data_exploration_results/Azadpur/cherry"
+    file_path = r"data/raw/Ganderbal Cherry.xlsx"
+    output_folder = r"data/raw/processed/Ganderbal"
+    eda_folder = r"Data_exploration_results/Ganderbal/cherry"
 
     # Ensure directories exist
     os.makedirs(output_folder, exist_ok=True)
