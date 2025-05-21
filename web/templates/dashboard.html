@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>🍎 Real-Time Apple Prices</title>
+    <title>🍎 Real-Time Apple Market Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
     <style>
         body {
@@ -25,6 +25,13 @@
         .plot-container {
             margin-top: 30px;
         }
+        .forecast-section {
+            margin-top: 40px;
+        }
+        .forecasted-price {
+            color: #d9534f; /* Bootstrap danger red */
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -37,13 +44,32 @@
                     <option value="{{ market }}" {% if market == selected_market %}selected{% endif %}>{{ market }}</option>
                 {% endfor %}
             </select>
+
+            <label class="mr-2">Fruit:</label>
+            <select name="fruit" class="form-control mr-4">
+                {% for fruit in fruits %}
+                    <option value="{{ fruit }}" {% if fruit == selected_fruit %}selected{% endif %}>{{ fruit }}</option>
+                {% endfor %}
+            </select>
+
             <label class="mr-2">Variety:</label>
             <select name="variety" class="form-control mr-4">
                 {% for variety in varieties %}
                     <option value="{{ variety }}" {% if variety == selected_variety %}selected{% endif %}>{{ variety }}</option>
                 {% endfor %}
             </select>
-            <button type="submit" class="btn btn-primary">Update</button>
+
+            <label class="mr-2">Grade:</label>
+            <select name="grade" class="form-control mr-4">
+                {% for grade in grades %}
+                    <option value="{{ grade }}" {% if grade == selected_grade %}selected{% endif %}>{{ grade }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="mr-2">Forecast Horizon (days):</label>
+            <input type="number" name="forecast_horizon" class="form-control mr-4" value="{{ forecast_horizon }}" min="1" max="60">
+
+            <button type="submit" class="btn btn-primary">Forecast Future</button>
         </form>
 
         <div class="plot-container">
@@ -51,9 +77,27 @@
         </div>
 
         <div class="mt-5">
-            <h5>📊 Data Table</h5>
+            <h5>📊 Data Table (Past 2 Months)</h5>
             {{ table_data | safe }}
         </div>
+
+        {% if forecast_plot_html %}
+        <div class="forecast-section">
+            <h5>📈 Forecast Plot (Past 1 Month + Future Forecast)</h5>
+            {{ forecast_plot_html | safe }}
+        </div>
+        {% endif %}
+
+        {% if forecasted_prices %}
+        <div class="forecast-section">
+            <h5>📋 Forecasted Prices</h5>
+            <ul>
+                {% for date, price in forecasted_prices %}
+                    <li class="forecasted-price">{{ date.strftime('%Y-%m-%d') }}: {{ price }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
     </div>
 </body>
 </html>

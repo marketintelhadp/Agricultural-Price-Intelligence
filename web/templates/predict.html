@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Price Prediction</title>
     <style>
         body {
@@ -16,16 +16,18 @@
         }
         form {
             margin-top: 20px;
+            max-width: 400px;
         }
         label {
             display: block;
             margin-bottom: 10px;
+            font-weight: bold;
         }
-        input[type="number"] {
+        select, input[type="number"] {
             padding: 10px;
             width: 100%;
-            max-width: 300px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
         }
         input[type="submit"] {
             padding: 10px 15px;
@@ -33,6 +35,7 @@
             color: white;
             border: none;
             cursor: pointer;
+            width: 100%;
         }
         input[type="submit"]:hover {
             background-color: #0056b3;
@@ -52,19 +55,51 @@
 </head>
 <body>
     <h1>LSTM Price Prediction</h1>
-    <p>Enter the number of future predictions you would like to receive:</p>
     <form action="/predict_future" method="post">
+        <label for="market">Market:</label>
+        <select id="market" name="market" required onchange="this.form.submit()">
+            {% for market in markets %}
+            <option value="{{ market }}" {% if market == selected_market %}selected{% endif %}>{{ market }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="fruit">Fruit:</label>
+        <select id="fruit" name="fruit" required onchange="this.form.submit()">
+            {% for fruit in fruits %}
+            <option value="{{ fruit }}" {% if fruit == selected_fruit %}selected{% endif %}>{{ fruit }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="variety">Variety:</label>
+        <select id="variety" name="variety" required onchange="this.form.submit()">
+            {% for variety in varieties %}
+            <option value="{{ variety }}" {% if variety == selected_variety %}selected{% endif %}>{{ variety }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="grade">Grade:</label>
+        <select id="grade" name="grade" required>
+            {% for grade in grades %}
+            <option value="{{ grade }}" {% if grade == selected_grade %}selected{% endif %}>{{ grade }}</option>
+            {% endfor %}
+        </select>
+
         <label for="num_predictions">Number of Predictions:</label>
-        <input type="number" id="num_predictions" name="num_predictions" required>
-        <input type="submit" value="Get Predictions">
+        <input type="number" id="num_predictions" name="num_predictions" min="1" max="30" value="{{ num_predictions or 7 }}" required />
+
+        <input type="submit" value="Get Predictions" />
     </form>
 
     {% if predicted_prices %}
     <div class="predictions">
         <h2>Your Predictions</h2>
-        <p>Predicted Prices: {{ predicted_prices }}</p>
+        <ul>
+            {% for date, price in predicted_prices %}
+            <li>{{ date.strftime('%Y-%m-%d') }}: {{ price }}</li>
+            {% endfor %}
+        </ul>
         <h3>Trend Plot</h3>
-        <img src="data:image/png;base64,{{ trend_plot }}" alt="Trend Plot">
+        <img src="data:image/png;base64,{{ trend_plot }}" alt="Trend Plot" />
     </div>
     {% endif %}
 </body>
