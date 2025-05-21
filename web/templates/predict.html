@@ -16,11 +16,11 @@
         }
         form {
             margin-top: 20px;
-            max-width: 400px;
+            max-width: 500px;
         }
         label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-weight: bold;
         }
         select, input[type="number"] {
@@ -55,34 +55,19 @@
 </head>
 <body>
     <h1>LSTM Price Prediction</h1>
+
     <form action="/predict_future" method="post">
         <label for="market">Market:</label>
-        <select id="market" name="market" required onchange="this.form.submit()">
-            {% for market in markets %}
-            <option value="{{ market }}" {% if market == selected_market %}selected{% endif %}>{{ market }}</option>
-            {% endfor %}
-        </select>
+        <select id="market" name="market" required></select>
 
         <label for="fruit">Fruit:</label>
-        <select id="fruit" name="fruit" required onchange="this.form.submit()">
-            {% for fruit in fruits %}
-            <option value="{{ fruit }}" {% if fruit == selected_fruit %}selected{% endif %}>{{ fruit }}</option>
-            {% endfor %}
-        </select>
+        <select id="fruit" name="fruit" required></select>
 
         <label for="variety">Variety:</label>
-        <select id="variety" name="variety" required onchange="this.form.submit()">
-            {% for variety in varieties %}
-            <option value="{{ variety }}" {% if variety == selected_variety %}selected{% endif %}>{{ variety }}</option>
-            {% endfor %}
-        </select>
+        <select id="variety" name="variety" required></select>
 
         <label for="grade">Grade:</label>
-        <select id="grade" name="grade" required>
-            {% for grade in grades %}
-            <option value="{{ grade }}" {% if grade == selected_grade %}selected{% endif %}>{{ grade }}</option>
-            {% endfor %}
-        </select>
+        <select id="grade" name="grade" required></select>
 
         <label for="num_predictions">Number of Predictions:</label>
         <input type="number" id="num_predictions" name="num_predictions" min="1" max="30" value="{{ num_predictions or 7 }}" required />
@@ -95,12 +80,53 @@
         <h2>Your Predictions</h2>
         <ul>
             {% for date, price in predicted_prices %}
-            <li>{{ date.strftime('%Y-%m-%d') }}: {{ price }}</li>
+            <li>{{ date }}: ₹{{ '%.2f'|format(price) }}</li>
             {% endfor %}
         </ul>
         <h3>Trend Plot</h3>
         <img src="data:image/png;base64,{{ trend_plot }}" alt="Trend Plot" />
     </div>
     {% endif %}
+
+    <script>
+        const config = {{ config | tojson }};
+        const marketSelect = document.getElementById("market");
+        const fruitSelect = document.getElementById("fruit");
+        const varietySelect = document.getElementById("variety");
+        const gradeSelect = document.getElementById("grade");
+
+        function populate(select, options) {
+            select.innerHTML = "";
+            options.forEach(opt => {
+                const option = document.createElement("option");
+                option.value = opt;
+                option.textContent = opt;
+                select.appendChild(option);
+            });
+        }
+
+        function updateAllDropdowns() {
+            const market = marketSelect.value;
+            const fruits = Object.keys(config[market] || {});
+            populate(fruitSelect, fruits);
+
+            const fruit = fruitSelect.value;
+            const varieties = Object.keys(config[market]?.[fruit] || {});
+            populate(varietySelect, varieties);
+
+            const variety = varietySelect.value;
+            const grades = Object.keys(config[market]?.[fruit]?.[variety] || {});
+            populate(gradeSelect, grades);
+        }
+
+        [marketSelect, fruitSelect, varietySelect].forEach(select =>
+            select.addEventListener("change", updateAllDropdowns)
+        );
+
+        window.onload = () => {
+            populate(marketSelect, Object.keys(config));
+            updateAllDropdowns();
+        };
+    </script>
 </body>
 </html>
