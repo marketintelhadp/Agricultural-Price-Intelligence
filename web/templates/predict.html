@@ -3,90 +3,187 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Price Prediction</title>
+    <title>Smart Crop Price Forecast</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #e0f7fa, #ffffff);
         }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            background: #ffffff;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
         h1 {
-            color: #333;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 0.5rem;
         }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 1.5rem;
+        }
+
         form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
             margin-top: 20px;
-            max-width: 500px;
+            align-items: end;
         }
+
         label {
+            font-weight: 600;
+            margin-bottom: 5px;
             display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
         }
+
         select, input[type="number"] {
             padding: 10px;
             width: 100%;
-            margin-bottom: 15px;
             box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            transition: box-shadow 0.2s ease-in-out;
         }
+
+        select:hover, input[type="number"]:hover {
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
         input[type="submit"] {
-            padding: 10px 15px;
+            padding: 11px 15px;
             background-color: #007bff;
             color: white;
             border: none;
             cursor: pointer;
             width: 100%;
+            font-size: 16px;
+            border-radius: 5px;
+            align-self: end;
+            transition: background-color 0.2s ease-in-out;
         }
+
         input[type="submit"]:hover {
             background-color: #0056b3;
         }
-        img {
-            margin-top: 20px;
-            max-width: 100%;
-            height: auto;
-        }
+
         .predictions {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #e9ecef;
-            border-radius: 5px;
+            margin-top: 40px;
+        }
+
+        .forecast-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: space-between;
+        }
+
+        .forecast-list {
+            flex: 1 1 250px;
+        }
+
+        .forecast-list ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .forecast-list li {
+            padding: 6px 0;
+            font-size: 16px;
+        }
+
+        .highlight-max {
+            color: green;
+            font-weight: bold;
+        }
+
+        .highlight-min {
+            color: red;
+            font-weight: bold;
+        }
+
+        #plotly-chart {
+            flex: 1 1 600px;
         }
     </style>
 </head>
 <body>
-    <h1>LSTM Price Prediction</h1>
+<div class="container">
+    <h1>Smart Market Forecast: Know Your Crop Prices Ahead</h1>
+    <p class="subtitle">Empowering Farmers with AI-powered price forecasts</p>
 
     <form action="/predict_future" method="post">
-        <label for="market">Market:</label>
-        <select id="market" name="market" required></select>
-
-        <label for="fruit">Fruit:</label>
-        <select id="fruit" name="fruit" required></select>
-
-        <label for="variety">Variety:</label>
-        <select id="variety" name="variety" required></select>
-
-        <label for="grade">Grade:</label>
-        <select id="grade" name="grade" required></select>
-
-        <label for="num_predictions">Number of Predictions:</label>
-        <input type="number" id="num_predictions" name="num_predictions" min="1" max="30" value="{{ num_predictions or 7 }}" required />
-
-        <input type="submit" value="Get Predictions" />
+        <div>
+            <label for="market">Market:</label>
+            <select id="market" name="market" required></select>
+        </div>
+        <div>
+            <label for="fruit">Fruit:</label>
+            <select id="fruit" name="fruit" required></select>
+        </div>
+        <div>
+            <label for="variety">Variety:</label>
+            <select id="variety" name="variety" required></select>
+        </div>
+        <div>
+            <label for="grade">Grade:</label>
+            <select id="grade" name="grade" required></select>
+        </div>
+        <div>
+            <label for="num_predictions">Number of Predictions:</label>
+            <input type="number" id="num_predictions" name="num_predictions" min="1" max="30" value="{{ num_predictions or 7 }}" required />
+        </div>
+        <div>
+            <label>&nbsp;</label>
+            <input type="submit" value="Forecast" />
+        </div>
     </form>
 
     {% if predicted_prices %}
     <div class="predictions">
         <h2>Your Predictions</h2>
-        <ul>
-            {% for date, price in predicted_prices %}
-            <li>{{ date }}: ₹{{ '%.2f'|format(price) }}</li>
-            {% endfor %}
-        </ul>
-        <h3>Trend Plot</h3>
-        <img src="data:image/png;base64,{{ trend_plot }}" alt="Trend Plot" />
+        <div class="forecast-section">
+            <div class="forecast-list">
+                <ul>
+                    {% for date, price in predicted_prices %}
+                    <li><strong>{{ date }}</strong>: ₹{{ '%.2f'|format(price) }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div id="plotly-chart"></div>
+        </div>
+        <script>
+            const forecastData = {
+                x: {{ predicted_prices | map(attribute=0) | list | tojson }},
+                y: {{ predicted_prices | map(attribute=1) | list | tojson }},
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#ff7f0e' },
+                name: 'Forecast'
+            };
+            Plotly.newPlot('plotly-chart', [forecastData], {
+                title: 'Forecasted Prices',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Price (₹/kg)' },
+                margin: { l: 40, r: 30, t: 50, b: 50 }
+            });
+        </script>
     </div>
     {% endif %}
+</div>
 
     <script>
         const config = {{ config | tojson }};
@@ -95,7 +192,7 @@
         const varietySelect = document.getElementById("variety");
         const gradeSelect = document.getElementById("grade");
 
-        function populate(select, options) {
+        function populate(select, options, selectedValue = null) {
             select.innerHTML = "";
             options.forEach(opt => {
                 const option = document.createElement("option");
@@ -103,30 +200,60 @@
                 option.textContent = opt;
                 select.appendChild(option);
             });
+            if (selectedValue && options.includes(selectedValue)) {
+                select.value = selectedValue;
+            }
         }
 
-        function updateAllDropdowns() {
+        function updateDependentDropdowns(setDefaults = false) {
             const market = marketSelect.value;
-            const fruits = Object.keys(config[market] || {});
-            populate(fruitSelect, fruits);
+            let configKey = market;
+            let locationKey = null;
+
+            if (market === "Pachhar Pulwama") {
+                configKey = "Pulwama";
+                locationKey = "Pachhar";
+            } else if (market === "Prichoo Pulwama") {
+                configKey = "Pulwama";
+                locationKey = "Prichoo";
+            }
+
+            const fruits = Object.keys(config[configKey] || {});
+            const selectedFruit = setDefaults ? "{{ selected_fruit }}" : fruitSelect.value;
+            populate(fruitSelect, fruits, selectedFruit);
 
             const fruit = fruitSelect.value;
-            const varieties = Object.keys(config[market]?.[fruit] || {});
-            populate(varietySelect, varieties);
+            const varieties = locationKey
+                ? Object.keys(config[configKey]?.[fruit]?.[locationKey] || {})
+                : Object.keys(config[configKey]?.[fruit] || {});
+            const selectedVariety = setDefaults ? "{{ selected_variety }}" : varietySelect.value;
+            populate(varietySelect, varieties, selectedVariety);
 
             const variety = varietySelect.value;
-            const grades = Object.keys(config[market]?.[fruit]?.[variety] || {});
-            populate(gradeSelect, grades);
+            const grades = locationKey
+                ? Object.keys(config[configKey]?.[fruit]?.[locationKey]?.[variety] || {})
+                : Object.keys(config[configKey]?.[fruit]?.[variety] || {});
+            const selectedGrade = setDefaults ? "{{ selected_grade }}" : gradeSelect.value;
+            populate(gradeSelect, grades, selectedGrade);
         }
 
-        [marketSelect, fruitSelect, varietySelect].forEach(select =>
-            select.addEventListener("change", updateAllDropdowns)
-        );
+        marketSelect.addEventListener("change", () => updateDependentDropdowns(true));
+        fruitSelect.addEventListener("change", () => updateDependentDropdowns());
+        varietySelect.addEventListener("change", () => updateDependentDropdowns());
 
         window.onload = () => {
-            populate(marketSelect, Object.keys(config));
-            updateAllDropdowns();
+            const rawMarkets = Object.keys(config);
+            const markets = rawMarkets.filter(m => m !== "Pulwama");
+            if (rawMarkets.includes("Pulwama")) {
+                markets.push("Pachhar Pulwama");
+                markets.push("Prichoo Pulwama");
+            }
+
+            populate(marketSelect, markets, "{{ selected_market }}");
+            updateDependentDropdowns(true);
         };
     </script>
+
+
 </body>
 </html>
