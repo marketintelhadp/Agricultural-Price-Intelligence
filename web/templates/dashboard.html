@@ -2,62 +2,80 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Crop Market Intelligence Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
             margin: 0;
             padding: 0;
-            background-color: #f9f9f9;
         }
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 30px auto;
-            background: #ffffff;
-            padding: 30px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
+            padding: 20px;
         }
         h1 {
-            color: #2c3e50;
             text-align: center;
+            color: #2c3e50;
         }
-        h2, h3 {
-            color: #333;
-            margin-top: 20px;
-        }
-        form {
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
             margin: 20px 0;
         }
-        .dropdowns {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: flex-end;
+        .form-row > div {
+            flex: 1 1 22%;
+            margin: 10px;
         }
-        .dropdowns label {
+        label {
             font-weight: bold;
         }
-        .dropdowns select {
-            padding: 8px;
-            border-radius: 5px;
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
             border: 1px solid #ccc;
+            border-radius: 5px;
         }
-        .dropdowns button {
-            padding: 10px 20px;
+        button {
             background-color: #007bff;
             color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
             cursor: pointer;
+        }
+        .cards {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .card {
+            flex: 1 1 200px;
+            background-color: white;
+            margin: 10px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .card h3 {
+            margin: 10px 0;
+            color: #333;
+        }
+        .plot-container, .table-container {
+            margin: 30px 0;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
         th, td {
             padding: 10px;
@@ -68,9 +86,6 @@
             background-color: #007bff;
             color: white;
         }
-        .plot-container {
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
@@ -78,54 +93,58 @@
     <h1>Crop Market Intelligence Dashboard</h1>
 
     <form method="GET" action="/dashboard">
-        <div class="dropdowns">
+        <div class="form-row">
             <div>
-                <label for="market">Market:</label>
+                <label for="market">Market</label>
                 <select name="market" id="market">
-                    {% for item in dropdown_options.markets %}
-                        <option value="{{ item }}" {% if item == selected_market %}selected{% endif %}>{{ item }}</option>
-                    {% endfor %}
+                    <option value="">--Select--</option>
                 </select>
             </div>
             <div>
-                <label for="fruit">Fruit:</label>
+                <label for="fruit">Fruit</label>
                 <select name="fruit" id="fruit">
-                    {% for item in dropdown_options.fruits %}
-                        <option value="{{ item }}" {% if item == selected_fruit %}selected{% endif %}>{{ item }}</option>
-                    {% endfor %}
+                    <option value="">--Select--</option>
                 </select>
             </div>
             <div>
-                <label for="variety">Variety:</label>
+                <label for="variety">Variety</label>
                 <select name="variety" id="variety">
-                    {% for item in dropdown_options.varieties %}
-                        <option value="{{ item }}" {% if item == selected_variety %}selected{% endif %}>{{ item }}</option>
-                    {% endfor %}
+                    <option value="">--Select--</option>
                 </select>
             </div>
             <div>
-                <label for="grade">Grade:</label>
+                <label for="grade">Grade</label>
                 <select name="grade" id="grade">
-                    {% for item in dropdown_options.grades %}
-                        <option value="{{ item }}" {% if item == selected_grade %}selected{% endif %}>{{ item }}</option>
-                    {% endfor %}
+                    <option value="">--Select--</option>
                 </select>
             </div>
             <div>
+                <label>&nbsp;</label>
                 <button type="submit">Update</button>
             </div>
         </div>
     </form>
 
+    <!-- <div class="cards">
+    {% for card in cards %}
+    <div class="card">
+        <h3>{{ card.title }}</h3>
+        <p>{{ card.value }}</p>
+    </div>
+    {% endfor %}
+</div> -->
+
     <div class="plot-container">
-        <h2>Recent Price Trends</h2>
-        <h3>Showing: {{ selected_market }} → {{ selected_fruit }} → {{ selected_variety }} → {{ selected_grade }}</h3>
+        <pre style="background:#eee;padding:10px;">
+            {{ plot_data | tojson }}
+        </pre>
+        <h2>Market Intelligence Visuals</h2>
         <div id="trendPlot"></div>
     </div>
 
-    <div>
-        <h2>Past Price Table</h2>
-        <table id="priceTable">
+    <div class="table-container">
+        <h2>Recent Prices Table</h2>
+        <table>
             <thead>
                 <tr>
                     <th>Date</th>
@@ -138,23 +157,76 @@
             </thead>
             <tbody>
                 {% for row in data %}
-                    <tr>
-                        <td>{{ row.Date }}</td>
-                        <td>{{ row.Market }}</td>
-                        <td>{{ row.Fruit }}</td>
-                        <td>{{ row.Variety }}</td>
-                        <td>{{ row.Grade }}</td>
-                        <td>{{ '%.2f'|format(row['Price (₹/kg)']) }}</td>
-                    </tr>
+                <tr>
+                    <td>{{ row.Date }}</td>
+                    <td>{{ row.Market }}</td>
+                    <td>{{ row.Fruit }}</td>
+                    <td>{{ row.Variety }}</td>
+                    <td>{{ row.Grade }}</td>
+                    <td>{{ '%.2f'|format(row['Price (₹/kg)']) }}</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-
-    <script>
-        const plotData = {{ plot_data | safe }};
-        Plotly.newPlot('trendPlot', plotData);
-    </script>
 </div>
+
+<script>
+    const config = {{ config | tojson }};
+    const marketSelect = document.getElementById("market");
+    const fruitSelect = document.getElementById("fruit");
+    const varietySelect = document.getElementById("variety");
+    const gradeSelect = document.getElementById("grade");
+
+    function populate(select, options, selectedValue = null) {
+        select.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "--Select--";
+        select.appendChild(placeholder);
+        options.forEach(opt => {
+            const option = document.createElement("option");
+            option.value = opt;
+            option.textContent = opt;
+            select.appendChild(option);
+        });
+        if (selectedValue && options.includes(selectedValue)) {
+            select.value = selectedValue;
+        }
+    }
+
+    function updateDependentDropdowns(setDefaults = false) {
+        const market = marketSelect.value;
+        const fruits = Object.keys(config[market] || {});
+        const selectedFruit = setDefaults ? "{{ selected_fruit }}" : fruitSelect.value;
+        populate(fruitSelect, fruits, selectedFruit);
+
+        const fruit = fruitSelect.value;
+        const varieties = Object.keys(config[market]?.[fruit] || {});
+        const selectedVariety = setDefaults ? "{{ selected_variety }}" : varietySelect.value;
+        populate(varietySelect, varieties, selectedVariety);
+
+        const variety = varietySelect.value;
+        const grades = Object.keys(config[market]?.[fruit]?.[variety] || {});
+        const selectedGrade = setDefaults ? "{{ selected_grade }}" : gradeSelect.value;
+        populate(gradeSelect, grades, selectedGrade);
+    }
+
+    marketSelect.addEventListener("change", () => updateDependentDropdowns(true));
+    fruitSelect.addEventListener("change", () => updateDependentDropdowns());
+    varietySelect.addEventListener("change", () => updateDependentDropdowns());
+
+    window.onload = () => {
+        populate(marketSelect, Object.keys(config), "{{ selected_market }}");
+        updateDependentDropdowns(true);
+    };
+</script>
+
+<script>
+    const plotData = {{ plot_data | tojson }};
+    if (plotData && plotData.data && plotData.layout) {
+        Plotly.newPlot('trendPlot', plotData.data, plotData.layout);
+    }
+</script>
 </body>
 </html>
