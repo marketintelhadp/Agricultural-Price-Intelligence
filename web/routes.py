@@ -7,11 +7,15 @@ from sklearn.preprocessing import MinMaxScaler
 from keras.metrics import MeanSquaredError
 from config import CONFIG
 from datetime import datetime
-import plotly.graph_objs as go
-import plotly.io as pio
+import matplotlib.pyplot as plt
+import seaborn as sns
+import io
+import base64
 from glob import glob
 import os
 import json
+import plotly.graph_objs as go
+import plotly.io as pio
 from plotly.subplots import make_subplots
 from plotly.utils import PlotlyJSONEncoder
 
@@ -32,58 +36,35 @@ def align_forecast_dates_to_previous_year(df, forecast_days, target_year):
     return [f"{target_year}-{md}" for md in unique_md[:forecast_days]]
 
 def create_dashboard_plot(df):
-    fig = go.Figure()
-    df = df.sort_values(by='Date')  # Always sort before plotting
-    fig.add_trace(go.Scatter(
+    import plotly.graph_objs as go
+    import plotly.io as pio
+    import json
+
+    # Filter only actual sales
+    df = df[df['Mask'] == 1].copy()
+    df['Date'] = pd.to_datetime(df['Date'])
+
+    # Create a Plotly scatter line chart without connecting missing dates
+    trace = go.Scatter(
         x=df['Date'],
         y=df['Price (₹/kg)'],
         mode='lines+markers',
-        name='Actual Prices',
-        line=dict(color='#ff7f0e')
-    ))
-    fig.update_layout(
-        title='Recent Price Trends',
+        line=dict(color='orange'),
+        marker=dict(size=6),
+        name='Actual Sales',
+        connectgaps=False  # This is the key fix
+    )
+
+    layout = go.Layout(
+        title='Recent Price Trends (Only Actual Sales)',
         xaxis_title='Date',
         yaxis_title='Price (₹/kg)',
         template='plotly_white',
-        margin=dict(l=30, r=30, t=50, b=30)
+        margin=dict(l=40, r=30, t=50, b=40)
     )
-    return fig.to_json()
 
-def create_enhanced_dashboard_plots(df):
-    df = df.copy()
-    df = df.sort_values("Date")
-    df["Month"] = df["Date"].dt.to_period("M")
-    df["MonthStr"] = df["Month"].astype(str)
-
-    # Monthly Average Prices
-    monthly_avg = df.groupby("MonthStr")["Price (₹/kg)"].mean().reset_index()
-    avg_trace = go.Bar(x=monthly_avg["MonthStr"], y=monthly_avg["Price (₹/kg)"], name="Monthly Avg Price")
-
-    # Min/Max Price Range
-    monthly_minmax = df.groupby("MonthStr")["Price (₹/kg)"].agg(["min", "max"]).reset_index()
-    min_trace = go.Scatter(x=monthly_minmax["MonthStr"], y=monthly_minmax["min"], name="Monthly Min", mode="lines+markers")
-    max_trace = go.Scatter(x=monthly_minmax["MonthStr"], y=monthly_minmax["max"], name="Monthly Max", mode="lines+markers")
-
-    # Box Plot by Month
-    box_trace = go.Box(x=df["MonthStr"], y=df["Price (₹/kg)"], name="Price Distribution", boxmean=True)
-
-    # Combine Subplots
-    fig = make_subplots(
-        rows=2, cols=2,
-        subplot_titles=("Monthly Avg Price", "Min/Max Price Range", "", "Box Plot by Month"),
-        specs=[[{"type": "bar"}, {"type": "scatter"}],
-               [None, {"type": "box"}]]
-    )
-    fig.add_trace(avg_trace, row=1, col=1)
-    fig.add_trace(min_trace, row=1, col=2)
-    fig.add_trace(max_trace, row=1, col=2)
-    fig.add_trace(box_trace, row=2, col=2)
-
-    fig.update_layout(height=700, margin=dict(t=50, b=30), showlegend=True)
-    return json.loads(json.dumps(fig, cls=PlotlyJSONEncoder))
-
-
+    fig = go.Figure(data=[trace], layout=layout)
+    return pio.to_html(fig, full_html=False)
 
 def parse_dataset(file_path):
     try:
@@ -210,13 +191,47 @@ def setup_routes(app):
     @app.route('/dashboard')
     def dashboard():
         try:
-            markets = sorted(CONFIG.keys())
+            # Reconstruct CONFIG for dashboard dropdown rendering (preserve original for prediction)
+            dashboard_config = {}
+            for market, fruits in CONFIG.items():
+                if market == "Pulwama":
+                    for fruit, submarkets in fruits.items():
+                        for submarket, grades in submarkets.items():
+                            new_market_key = f"{submarket} Pulwama"
+                            if new_market_key not in dashboard_config:
+                                dashboard_config[new_market_key] = {}
+                            dashboard_config[new_market_key][fruit] = grades
+                else:
+                    dashboard_config[market] = fruits
+
+            markets = sorted(dashboard_config.keys())
             selected_market = request.args.get('market') or markets[0] if markets else ''
-            fruits = sorted(CONFIG[selected_market].keys()) if selected_market in CONFIG else []
+
+            # Map Pulwama submarkets back
+            adjusted_market = "Pulwama"
+            location_key = None
+            if selected_market.startswith("Pachhar"):
+                location_key = "Pachhar"
+            elif selected_market.startswith("Prichoo"):
+                location_key = "Prichoo"
+            else:
+                adjusted_market = selected_market
+
+            fruits = sorted(dashboard_config[selected_market].keys()) if selected_market in dashboard_config else []
             selected_fruit = request.args.get('fruit') or (fruits[0] if fruits else '')
-            varieties = sorted(CONFIG[selected_market][selected_fruit].keys()) if selected_market in CONFIG and selected_fruit in CONFIG[selected_market] else []
+            varieties = []
+            if location_key:
+                varieties = sorted(CONFIG[adjusted_market][selected_fruit][location_key].keys()) if selected_fruit in CONFIG[adjusted_market] and location_key in CONFIG[adjusted_market][selected_fruit] else []
+            else:
+                varieties = sorted(CONFIG[selected_market][selected_fruit].keys()) if selected_fruit in CONFIG[selected_market] else []
+
             selected_variety = request.args.get('variety') or (varieties[0] if varieties else '')
-            grades = sorted(CONFIG[selected_market][selected_fruit][selected_variety].keys()) if selected_market in CONFIG and selected_fruit in CONFIG[selected_market] and selected_variety in CONFIG[selected_market][selected_fruit] else []
+            grades = []
+            if location_key:
+                grades = sorted(CONFIG[adjusted_market][selected_fruit][location_key][selected_variety].keys()) if selected_variety in CONFIG[adjusted_market][selected_fruit][location_key] else []
+            else:
+                grades = sorted(CONFIG[selected_market][selected_fruit][selected_variety].keys()) if selected_variety in CONFIG[selected_market][selected_fruit] else []
+
             selected_grade = request.args.get('grade') or (grades[0] if grades else '')
 
             cards = [
@@ -226,12 +241,15 @@ def setup_routes(app):
                 {'title': 'Selected Grade', 'value': selected_grade or 'N/A'}
             ]
 
-            # Default empty dataset/plot
             data = []
             plot_json = '[]'
 
             try:
-                config_entry = CONFIG[selected_market][selected_fruit][selected_variety][selected_grade]
+                if location_key:
+                    config_entry = CONFIG[adjusted_market][selected_fruit][location_key][selected_variety][selected_grade]
+                else:
+                    config_entry = CONFIG[selected_market][selected_fruit][selected_variety][selected_grade]
+
                 data_path = config_entry['dataset']
                 df = pd.read_csv(data_path)
                 df = df[df['Mask'] == 1]
@@ -240,34 +258,19 @@ def setup_routes(app):
                 df['Price'] = df['Avg Price (per kg)']
                 df.rename(columns={'Avg Price (per kg)': 'Price (₹/kg)'}, inplace=True)
 
-                data = df.tail(100).to_dict(orient='records')
+                data = df.tail(150).to_dict(orient='records')
                 if df.empty or 'Price (₹/kg)' not in df.columns:
                     flash("No data available for the selected combination.", "warning")
-                    return render_template("dashboard.html", config=CONFIG, data=[], plot_data={"data": [], "layout": {}},
-                                        selected_market=selected_market,
-                                        selected_fruit=selected_fruit,
-                                        selected_variety=selected_variety,
-                                        selected_grade=selected_grade,
-                                        cards=cards)
-                plot_json = create_enhanced_dashboard_plots(df)
+                    return render_template("dashboard.html", config=dashboard_config, data=[], plot_data="", selected_market=selected_market, selected_fruit=selected_fruit, selected_variety=selected_variety, selected_grade=selected_grade, cards=cards)
+                plot_json = create_dashboard_plot(df)
 
             except Exception as e:
                 logging.warning(f"No data available for the selected combination: {e}")
                 flash("No data available for the selected combination.", "warning")
 
-            return render_template("dashboard.html",
-                config=CONFIG,
-                data=df.tail(100).to_dict(orient='records'),
-                plot_data=plot_json,
-                selected_market=selected_market,
-                selected_fruit=selected_fruit,
-                selected_variety=selected_variety,
-                selected_grade=selected_grade,
-                cards=cards
-            )
+            plot_img = create_dashboard_plot(df.tail(100))
+            return render_template("dashboard.html", config=dashboard_config, data=df.tail(150).to_dict(orient='records'), plot_data=plot_img, selected_market=selected_market, selected_fruit=selected_fruit, selected_variety=selected_variety, selected_grade=selected_grade, cards=cards)
 
         except Exception as e:
             logging.error(f"Dashboard error: {str(e)}")
-            return render_template("dashboard.html", config=CONFIG, data=[], plot_data='[]',
-                selected_market='', selected_fruit='', selected_variety='', selected_grade='',
-                cards=[])
+            return render_template("dashboard.html", config=CONFIG, data=[], plot_data='[]', selected_market='', selected_fruit='', selected_variety='', selected_grade='', cards=[])
