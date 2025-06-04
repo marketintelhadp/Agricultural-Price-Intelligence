@@ -17,15 +17,16 @@ username = "shaheen_skuast"
 password = "Kkg@1234"
 download_dir = os.path.abspath(r"D:\Git Projects\Price_forecasting_project\Agricultural-Price-Intelligence\data\real_time")
 
-# Clear the download directory before starting
-if os.path.exists(download_dir):
-    for f in os.listdir(download_dir):
-        file_path = os.path.join(download_dir, f)
-        try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
-        except Exception as e:
-            print(f"⚠️ Could not delete file {file_path}: {e}")
+# === USER INPUT ===
+valid_crops = ["Apple", "Cherry"]
+print("Available crops:", ", ".join(valid_crops))
+crop_choice = input("Enter crop name (Apple/Cherry): ").strip().title()
+
+if crop_choice not in valid_crops:
+    print(f"❌ Invalid crop: {crop_choice}. Exiting...")
+    exit(1)
+
+
 
 # === CONFIGURE SELENIUM ===
 chrome_options = Options()
@@ -97,9 +98,10 @@ try:
         time.sleep(2)
 
     # Step 6: Select "Apple" from dropdown
-    print("🍎 Selecting 'Apple' from crop dropdown...")
+    print(f"🌾 Selecting '{crop_choice}' from crop dropdown...")
     select = Select(dropdown)
-    select.select_by_visible_text("Apple")
+    select.select_by_visible_text(crop_choice)
+
     time.sleep(2)
     
     # Step 7: Click export icon
@@ -129,35 +131,66 @@ try:
     else:
         print("⚠️ No CSV file found in download folder!")
         
-    def wait_for_download(folder, timeout=30):
+    def wait_for_download_and_rename(folder, crop_name, timeout=30):
+        print("⏳ Waiting for CSV download to complete...")
         seconds = 0
-        while True:
+        while seconds < timeout:
             files = os.listdir(folder)
-            if any(f.endswith(".crdownload") for f in files):
-                # Still downloading
-                time.sleep(1)
-            elif any(f.endswith(".csv") for f in files):
-                print("✅ CSV file detected and download complete.")
-                return True
-            else:
-                time.sleep(1)
-            seconds += 1
-            if seconds > timeout:
-                print("⚠️ Timeout: CSV file not downloaded.")
-                return False
 
-    # Wait for the file to appear and process it
-    if wait_for_download(download_dir):
-        csv_files = glob.glob(os.path.join(download_dir, "*.csv"))
-        if csv_files:
-            csv_file = csv_files[0]
-            df = pd.read_csv(csv_file)
-            # Convert the Date/Time column from epoch seconds to date format
-            df['Date/Time'] = pd.to_datetime(df['Date/Time'], unit = 's').dt.date
-            df.to_csv(csv_file, index=False)
-            print("✅ CSV file updated with converted Date/Time column.")
-        else:
-            print("⚠️ CSV file not found after waiting.")
+            # Wait if download is still in progress
+            if any(f.endswith(".crdownload") for f in files):
+                time.sleep(1)
+                seconds += 1
+                continue
+
+            # Check for completed CSV file (with known default name)
+            csv_files = [f for f in files if f.endswith(".csv") and "Daily Crop" in f]
+            if csv_files:
+                # Get full path of the latest matching file
+                csv_file = sorted(
+                    [os.path.join(folder, f) for f in csv_files],
+                    key=os.path.getmtime,
+                    reverse=True
+                )[0]
+
+                try:
+                    # Read the CSV
+                    df = pd.read_csv(csv_file)
+
+                    # Convert epoch to readable date format
+                    df['Date/Time'] = pd.to_datetime(df['Date/Time'], unit='s').dt.strftime('%Y-%m-%d')
+
+                    # Generate unique filename
+                    timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    new_name = os.path.join(folder, f"{crop_name.lower()}_kkg_data_{timestamp_str}.csv")
+
+                    # Save processed CSV
+                    df.to_csv(new_name, index=False)
+                    print(f"📦 CSV saved as: {new_name}")
+
+                    # Delete the original downloaded file
+                    os.remove(csv_file)
+                    print(f"🗑️ Deleted temp file: {csv_file}")
+
+                    return new_name
+
+                except Exception as e:
+                    print(f"❌ Error processing CSV file: {e}")
+                    return None
+
+            time.sleep(1)
+            seconds += 1
+
+        print("⚠️ Timeout: CSV file not downloaded or detected.")
+        return None
+
+
+    # === Trigger and process the downloaded file ===
+    result_file = wait_for_download_and_rename(download_dir, crop_choice)
+    if result_file:
+        print("✅ Download and processing completed successfully.")
+    else:
+        print("❌ Failed to download or process the CSV.")
 
 
 except Exception as e:

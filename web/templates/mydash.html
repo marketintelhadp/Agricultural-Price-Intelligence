@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Market Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #0d6efd;
+    }
+    .table-responsive {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .plot-container {
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="text-center">🧺 Market Intelligence Dashboard</h2>
+
+    <div class="plot-container">
+      <h5>📈 Price Trends</h5>
+      {{ plot_data | safe }}
+
+      <!-- Demand & Supply Legend -->
+      <div style="margin-top: 1em; font-size: 0.9em;">
+        <strong>Legend:</strong><br>
+        <span style="color: red;">●</span> High Demand &nbsp;
+        <span style="color: orange;">●</span> Medium Demand &nbsp;
+        <span style="color: green;">●</span> Low Demand &nbsp; |
+        <span style="font-family: Arial;">★</span> High Supply &nbsp;
+        <span style="font-family: Arial;">◆</span> Medium Supply &nbsp;
+        <span style="font-family: Arial;">●</span> Low Supply
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-striped">
+        <thead class="table-dark text-center">
+          <tr>
+            <th>Submission Date</th>
+            <th>Market</th>
+            <th>Fruit</th>
+            <th>Variety</th>
+            <th>Grade</th>
+            <th>Min Price</th>
+            <th>Max Price</th>
+            <th>Price (₹/kg)</th>
+            <th>Arrival Qty</th>
+            <th>Transaction Volume</th>
+            <th>Stock</th>
+            <th>Demand</th>
+            <th>Supply</th>
+            <th>Weather</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in data %}
+            <tr>
+              <td>{{ row['Submission Date'] }}</td>
+              <td>{{ row['Market'] }}</td>
+              <td>{{ row['Fruit'] }}</td>
+              <td>{{ row['Variety'] }}</td>
+              <td>{{ row['Grade'] }}</td>
+              <td>{{ row['Min Price'] }}</td>
+              <td>{{ row['Max Price'] }}</td>
+              <td>{{ row['Price (₹/kg)'] }}</td>
+              <td>{{ row['Arrival Qty'] }}</td>
+              <td>{{ row['Transaction Volume'] }}</td>
+              <td>{{ row['Stock'] }}</td>
+              <td>{{ row['Demand'] }}</td>
+              <td>{{ row['Supply'] }}</td>
+              <td>{{ row['Weather'] }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS for future interactivity if needed -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

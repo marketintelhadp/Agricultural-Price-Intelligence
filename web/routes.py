@@ -18,8 +18,20 @@ import plotly.graph_objs as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 from plotly.utils import PlotlyJSONEncoder
+from sqlalchemy import create_engine
+from flask import Blueprint, render_template, request, flash
+from sqlalchemy import create_engine, text
+import pandas as pd
+import logging
+from datetime import datetime
+#from routes import create_dashboard_plot  # Assuming reuse of existing function
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+mydash_bp = Blueprint('mydash', __name__, template_folder='templates')
+
+# PostgreSQL connection
+DATABASE_URL = "postgresql://marketdata_m0dt_user:jSdEzjqgKTdeqmjQIwr8UIRBa3qglzxD@dpg-d0inpmqdbo4c738msb60-a.oregon-postgres.render.com/marketdata_m0dt"
+engine = create_engine(DATABASE_URL)
+
 
 def create_forecast_plot(forecast_dates, future_predictions):
     trace = go.Scatter(x=forecast_dates, y=future_predictions, mode='lines+markers', name='Forecast')
@@ -34,6 +46,76 @@ def align_forecast_dates_to_previous_year(df, forecast_days, target_year):
     if len(unique_md) < forecast_days:
         raise ValueError("Not enough date variety in past data for forecast window")
     return [f"{target_year}-{md}" for md in unique_md[:forecast_days]]
+
+
+def create_marketdata_plot(df):
+    import plotly.graph_objs as go
+    import plotly.io as pio
+
+    # Step 1: Format date and sort
+    df['Submission Date'] = pd.to_datetime(df['Submission Date'])
+    df.sort_values('Submission Date', inplace=True)
+
+    # Color maps
+    demand_colors = {'High': 'red', 'Medium': 'orange', 'Low': 'green'}
+    supply_symbols = {'High': 'star', 'Medium': 'diamond', 'Low': 'circle'}
+
+    # Step 2: Rich hover text
+    df['HoverText'] = (
+        "<b>Market:</b> " + df['Market'].astype(str) + "<br>" +
+        "<b>Fruit:</b> " + df['Fruit'].astype(str) + "<br>" +
+        "<b>Variety:</b> " + df['Variety'].astype(str) + "<br>" +
+        "<b>Grade:</b> " + df['Grade'].astype(str) + "<br>" +
+        "<b>Min Price:</b> ₹" + df['Min Price'].astype(str) + "<br>" +
+        "<b>Max Price:</b> ₹" + df['Max Price'].astype(str) + "<br>" +
+        "<b>Modal Price:</b> ₹" + df['Price (₹/kg)'].astype(str) + "<br>" +
+        "<b>Arrival Qty:</b> " + df['Arrival Qty'].astype(str) + " MT<br>" +
+        "<b>Transaction Volume:</b> " + df['Transaction Volume'].astype(str) + "<br>" +
+        "<b>Stock:</b> " + df['Stock'].astype(str) + "<br>" +
+        "<b>Demand:</b> " + df['Demand'].astype(str) + "<br>" +
+        "<b>Supply:</b> " + df['Supply'].astype(str) + "<br>" +
+        "<b>Weather:</b> " + df['Weather'].astype(str)
+    )
+
+    # Step 3: Create grouped traces, skip Apple
+    traces = []
+    grouped = df.groupby(['Market', 'Fruit'])
+
+    for (market, fruit), group in grouped:
+        if fruit.strip().lower() == 'apple':
+            continue  # Skip Apple in plot
+
+        trace = go.Scatter(
+            x=group['Submission Date'],
+            y=group['Price (₹/kg)'],
+            mode='markers+lines',
+            name=f"{market} - {fruit}",
+            text=group['HoverText'],
+            hoverinfo='text',
+            marker=dict(
+                size=10,
+                color=[demand_colors.get(x, 'gray') for x in group['Demand']],
+                symbol=[supply_symbols.get(x, 'circle') for x in group['Supply']]
+            ),
+            connectgaps=False
+        )
+        traces.append(trace)
+
+    # Step 4: Layout
+    layout = go.Layout(
+        title='🧺 Market Intelligence: Modal Price Trends with Demand-Supply Cues',
+        xaxis_title='Submission Date',
+        yaxis_title='Modal Price (₹/kg)',
+        template='plotly_white',
+        margin=dict(l=40, r=30, t=60, b=40),
+        hovermode='closest',
+        legend_title_text='Market - Fruit'
+    )
+
+    fig = go.Figure(data=traces, layout=layout)
+    return pio.to_html(fig, full_html=False)
+
+
 
 def create_dashboard_plot(df):
     import plotly.graph_objs as go
@@ -274,3 +356,47 @@ def setup_routes(app):
         except Exception as e:
             logging.error(f"Dashboard error: {str(e)}")
             return render_template("dashboard.html", config=CONFIG, data=[], plot_data='[]', selected_market='', selected_fruit='', selected_variety='', selected_grade='', cards=[])
+    
+    @mydash_bp.route('/mydash')
+    def mydash():
+        try:
+            sql = text("""
+                SELECT * FROM market_data
+                ORDER BY submission_date DESC
+                LIMIT 150
+            """)
+            df = pd.read_sql(sql, engine)
+
+            if df.empty:
+                flash("No data found in the database.", "warning")
+                return render_template("mydash.html", data=[], plot_data='')
+
+            df['Date'] = pd.to_datetime(df['submission_date'])
+            df.rename(columns={
+                'modal_price': 'Price (₹/kg)',
+                'min_price': 'Min Price',
+                'max_price': 'Max Price',
+                'arrival_qty': 'Arrival Qty',
+                'transaction_volume': 'Transaction Volume',
+                'stock': 'Stock',
+                'market': 'Market',
+                'fruit': 'Fruit',
+                'variety': 'Variety',
+                'grade': 'Grade',
+                'demand': 'Demand',
+                'supply': 'Supply',
+                'weather': 'Weather',
+                'submission_date': 'Submission Date'
+            }, inplace=True)
+
+            df['Price'] = df['Price (₹/kg)']
+
+            data = df.to_dict(orient='records')
+            plot_img = create_marketdata_plot(df)
+
+            return render_template("mydash.html", data=data, plot_data=plot_img)
+
+        except Exception as e:
+            logging.error(f"mydash error: {e}")
+            flash("An error occurred while loading dashboard.", "danger")
+            return render_template("mydash.html", data=[], plot_data='')
