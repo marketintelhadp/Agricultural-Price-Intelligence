@@ -24,5 +24,9 @@ app.register_blueprint(realtime_bp)
 app.register_blueprint(mydash_bp)
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # Let Render define port
-    app.run(host='0.0.0.0', port=port, debug=True)
+    try:
+        port = int(os.environ.get("PORT", 5000))
+        app.run(host='0.0.0.0', port=port, debug=True)
+    except Exception as e:
+        import logging
+        logging.exception("App failed to start due to:")
