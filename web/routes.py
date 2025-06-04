@@ -1,7 +1,7 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-
+from functools import lru_cache
 from flask import request, jsonify, render_template, flash
 import numpy as np
 import pandas as pd
@@ -80,9 +80,16 @@ sale_periods = {
 
 def create_forecast_plot(forecast_dates, future_predictions):
     trace = go.Scatter(x=forecast_dates, y=future_predictions, mode='lines+markers', name='Forecast')
-    layout = go.Layout(title='Forecasted Prices', xaxis_title='Date', yaxis_title='Price (per kg)',
-                       template='plotly_white', margin=dict(l=30, r=30, t=50, b=30))
-    return pio.to_html(go.Figure(data=[trace], layout=layout), full_html=False)
+    layout = go.Layout(
+        title='Forecasted Prices',
+        xaxis_title='Date',
+        yaxis_title='Price (per kg)',
+        template='none',  # SAFE TEMPLATE
+        margin=dict(l=30, r=30, t=50, b=30)
+    )
+    fig = go.Figure(data=[trace], layout=layout)
+    return pio.to_html(fig, full_html=False)
+
 
 def align_forecast_dates_to_previous_year(df, forecast_days, target_year):
     df = df.copy()
@@ -220,6 +227,23 @@ def parse_dataset(file_path):
     except Exception as e:
         logging.warning(f"Skipping file {file_path} due to error: {e}")
         return None
+@lru_cache(maxsize=30)
+def load_model_cached(model_path_str):
+    """Model path as string. Custom object support included."""
+    print(f"🔁 Loading model from {model_path_str}...")
+    return load_model(model_path_str, custom_objects={'mse': MeanSquaredError()})
+
+def forecast_sequence(model, input_seq, days, scaler):
+    """Efficient batch prediction loop."""
+    forecast = []
+    seq = input_seq.copy()
+    for _ in range(days):
+        pred = model.predict(seq, verbose=0)
+        forecast.append(pred[0, 0])
+        seq = np.concatenate([seq[:, 1:, :], pred.reshape(1, 1, 1)], axis=1)
+    return scaler.inverse_transform(np.array(forecast).reshape(-1, 1)).flatten().tolist()
+
+
 
 def get_config_options(selected_market, selected_fruit=None, selected_variety=None):
     fruits = sorted(CONFIG[selected_market].keys()) if selected_market in CONFIG else []
@@ -270,8 +294,6 @@ def setup_routes(app):
                 return jsonify({'error': 'Start date and forecast option are required.'}), 400
 
             start_date = pd.to_datetime(start_date_str)
-            
-            # Sale periods dictionary lookup
             sale_key = (selected_market, selected_variety, selected_grade)
             sale_info = sale_periods.get(sale_key)
             if not sale_info:
@@ -287,65 +309,56 @@ def setup_routes(app):
             if start_date < sale_start_date or start_date > datetime.now():
                 return jsonify({'error': f'Start date {start_date.strftime("%Y-%m-%d")} is outside allowed range ({sale_start_date.strftime("%Y-%m-%d")} to today).'}), 400
 
-            # Load data and model
+            # Load config, model, data
             config_entry = CONFIG[selected_market][selected_fruit][selected_variety][selected_grade]
-            model_path = config_entry['model']
-            data_path = config_entry['dataset']
-            
-            df = pd.read_csv(data_path)
+            model = load_model_cached(config_entry['model'])
+            df = pd.read_csv(config_entry['dataset'])
             df = df[df['Mask'] == 1]
             df['Date'] = pd.to_datetime(df['Date'])
             df.sort_values(by='Date', inplace=True)
             prices = df['Avg Price (per kg)'].values.reshape(-1, 1)
+
             scaler = MinMaxScaler().fit(prices)
-            model = load_model(model_path, custom_objects={'mse': MeanSquaredError()})
             time_steps = model.input_shape[1]
-            
-            # Generate full sale period forecast
             total_forecast_days = (sale_end_date - sale_start_date).days + 1
+
             input_sequence = scaler.transform(prices[-time_steps:]).reshape(1, time_steps, 1)
-            future_predictions = []
-            for _ in range(total_forecast_days):
-                prediction = model.predict(input_sequence, verbose=0)
-                predicted_price = scaler.inverse_transform(prediction)
-                future_predictions.append(float(predicted_price[0][0]))
-                input_sequence = np.append(input_sequence[:, 1:, :], prediction.reshape(1, 1, 1), axis=1)
-            
+            future_predictions = forecast_sequence(model, input_sequence, total_forecast_days, scaler)
+
             forecast_dates_all = pd.date_range(start=sale_start_date, periods=total_forecast_days).to_list()
-            # Filter forecasts starting from start_date
             filtered = [(d, p) for d, p in zip(forecast_dates_all, future_predictions) if d >= start_date]
 
             forecast_length = 7 if forecast_option == 'week' else 14
             filtered = filtered[:forecast_length]
             if not filtered:
                 return jsonify({'error': f'No forecasts available starting from {start_date}.'}), 400
-            
+
             forecast_dates = [d.strftime('%Y-%m-%d') for d, _ in filtered]
             filtered_prices = [p for _, p in filtered]
-            
             forecast_plot = create_forecast_plot(forecast_dates, filtered_prices)
             predicted_prices = list(zip(forecast_dates, filtered_prices))
 
             fruits, varieties, grades = get_config_options(selected_market, selected_fruit, selected_variety)
-            sale_periods_json = { "|".join(k): v for k, v in sale_periods.items() }
+            sale_periods_json = {"|".join(k): v for k, v in sale_periods.items()}
+
             return render_template('predict.html',
-                       config=CONFIG,
-                       sale_periods=sale_periods_json,  # Convert tuple keys to strings
-                       markets=sorted(CONFIG.keys()),
-                       fruits=fruits,
-                       varieties=varieties,
-                       grades=grades,
-                       selected_market=selected_market,
-                       selected_fruit=selected_fruit,
-                       selected_variety=selected_variety,
-                       selected_grade=selected_grade,
-                       predicted_prices=predicted_prices,
-                       trend_plot=forecast_plot,
-                       start_date=start_date.strftime('%Y-%m-%d'))
-            
+                config=CONFIG,
+                sale_periods=sale_periods_json,
+                markets=sorted(CONFIG.keys()),
+                fruits=fruits,
+                varieties=varieties,
+                grades=grades,
+                selected_market=selected_market,
+                selected_fruit=selected_fruit,
+                selected_variety=selected_variety,
+                selected_grade=selected_grade,
+                predicted_prices=predicted_prices,
+                trend_plot=forecast_plot,
+                start_date=start_date.strftime('%Y-%m-%d'))
+
         except Exception as e:
-            logging.error(f"Prediction error: {e}")
-            return jsonify({'error': 'Prediction failed.'}), 500
+            logging.exception("Prediction failed with traceback:")
+            return jsonify({'error': f'Prediction failed: {str(e)}'}), 500
 
 
     @app.route('/dashboard')
