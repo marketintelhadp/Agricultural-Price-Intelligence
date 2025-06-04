@@ -1,16 +1,12 @@
 from flask import Flask
-from routes import setup_routes
-from realtime_routes import realtime_bp
-from routes import mydash_bp
+from web.routes import setup_routes, mydash_bp
+from web.realtime_routes import realtime_bp
 import os
-import sys
 from dotenv import load_dotenv
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Load environment variables from .env
 load_dotenv()
-
-# Ensure 'web' directory is in the Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Initialize Flask
 app = Flask(__name__, template_folder='templates')
