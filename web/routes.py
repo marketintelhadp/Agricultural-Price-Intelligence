@@ -21,16 +21,57 @@ from plotly.utils import PlotlyJSONEncoder
 from sqlalchemy import create_engine
 from flask import Blueprint, render_template, request, flash
 from sqlalchemy import create_engine, text
-import pandas as pd
 import logging
 from datetime import datetime
-#from routes import create_dashboard_plot  # Assuming reuse of existing function
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 mydash_bp = Blueprint('mydash', __name__, template_folder='templates')
 
 # PostgreSQL connection
 DATABASE_URL = "postgresql://marketdata_m0dt_user:jSdEzjqgKTdeqmjQIwr8UIRBa3qglzxD@dpg-d0inpmqdbo4c738msb60-a.oregon-postgres.render.com/marketdata_m0dt"
 engine = create_engine(DATABASE_URL)
+
+
+sale_periods = {
+    ('Azadpur', 'Makhmali', 'Fancy'): {'start': '05-20', 'end': '06-30', 'years': list(range(2015, 2026))},
+    ('Azadpur', 'Makhmali', 'Special'): {'start': '05-20', 'end': '06-30', 'years': list(range(2015, 2026))},
+    ('Azadpur', 'Makhmali', 'Super'): {'start': '05-20', 'end': '06-30', 'years': list(range(2015, 2026))},
+    ('Azadpur', 'Misri', 'Fancy'): {'start': '06-10', 'end': '07-15', 'years': list(range(2012, 2026))},
+    ('Azadpur', 'Misri', 'Special'): {'start': '06-10', 'end': '07-15', 'years': list(range(2012, 2026))},
+    ('Azadpur', 'Misri', 'Super'): {'start': '06-10', 'end': '07-15', 'years': list(range(2012, 2026))},
+    ('Ganderbal', 'Cherry', 'Large'): {'start': '05-13', 'end': '06-28', 'years': list(range(2019, 2026))},
+    ('Ganderbal', 'Cherry', 'Medium'): {'start': '05-13', 'end': '06-28', 'years': list(range(2019, 2026))},
+    ('Ganderbal', 'Cherry', 'Small'): {'start': '05-13', 'end': '06-28', 'years': list(range(2019, 2026))},
+    ('Narwal', 'American', 'Unknown'): {'start': '09-01', 'end': '12-30', 'years': list(range(2011, 2026))},
+    ('Narwal', 'Cherry', 'Large'): {'start': '05-15', 'end': '07-10', 'years': list(range(2016, 2026))},
+    ('Narwal', 'Cherry', 'Medium'): {'start': '05-15', 'end': '07-10', 'years': list(range(2016, 2026))},
+    ('Narwal', 'Cherry', 'Small'): {'start': '05-15', 'end': '07-10', 'years': list(range(2016, 2026))},
+    ('Narwal', 'Condition', 'Unknown'): {'start': '07-01', 'end': '08-31', 'years': list(range(2019, 2026))},
+    ('Narwal', 'Delicious', 'Unknown'): {'start': '01-01', 'end': '12-31', 'years': list(range(2011, 2026))},
+    ('Narwal', 'Hazratbali', 'Unknown'): {'start': '07-01', 'end': '08-30', 'years': list(range(2011, 2026))},
+    ('Narwal', 'Razakwadi', 'Unknown'): {'start': '08-01', 'end': '08-30', 'years': list(range(2013, 2026))},
+    ('Parimpore', 'Cherry', 'Large'): {'start': '05-10', 'end': '06-30', 'years': list(range(2019, 2026))},
+    ('Parimpore', 'Cherry', 'Medium'): {'start': '05-10', 'end': '06-30', 'years': list(range(2019, 2026))},
+    ('Parimpore', 'Cherry', 'Small'): {'start': '05-10', 'end': '06-30', 'years': list(range(2019, 2026))},
+    ('Shopian', 'American', 'A'): {'start': '10-01', 'end': '11-30', 'years': list(range(2017, 2026))},
+    ('Shopian', 'American', 'B'): {'start': '10-01', 'end': '11-30', 'years': list(range(2017, 2026))},
+    ('Shopian', 'Cherry', 'Large'): {'start': '05-20', 'end': '07-10', 'years': list(range(2019, 2026))},
+    ('Shopian', 'Cherry', 'Medium'): {'start': '05-20', 'end': '07-10', 'years': list(range(2019, 2026))},
+    ('Shopian', 'Cherry', 'Small'): {'start': '05-20', 'end': '07-10', 'years': list(range(2019, 2026))},
+    ('Shopian', 'Delicious', 'A'): {'start': '09-15', 'end': '12-31', 'years': list(range(2017, 2026))},
+    ('Shopian', 'Delicious', 'B'): {'start': '09-15', 'end': '12-31', 'years': list(range(2017, 2026))},
+    ('Shopian', 'Kullu delicious', 'A'): {'start': '09-01', 'end': '12-15', 'years': list(range(2017, 2026))},
+    ('Shopian', 'Kullu delicious', 'B'): {'start': '09-01', 'end': '12-15', 'years': list(range(2017, 2026))},
+    ('Shopian', 'Maharaji', 'A'): {'start': '10-01', 'end': '11-30', 'years': list(range(2017, 2026))},
+    ('Shopian', 'Maharaji', 'B'): {'start': '10-01', 'end': '11-30', 'years': list(range(2017, 2026))},
+    ('Sopore', 'American', 'A'): {'start': '01-01', 'end': '12-31', 'years': list(range(2015, 2026))},
+    ('Sopore', 'American', 'B'): {'start': '01-01', 'end': '12-31', 'years': list(range(2015, 2026))},
+    ('Sopore', 'Delicious', 'A'): {'start': '01-01', 'end': '12-31', 'years': list(range(2015, 2026))},
+    ('Sopore', 'Delicious', 'B'): {'start': '01-01', 'end': '12-31', 'years': list(range(2015, 2026))},
+    ('Sopore', 'Maharaji', 'A'): {'start': '11-01', 'end': '12-30', 'years': list(range(2015, 2026))},
+    ('Sopore', 'Maharaji', 'B'): {'start': '11-01', 'end': '12-30', 'years': list(range(2015, 2026))}
+}
 
 
 def create_forecast_plot(forecast_dates, future_predictions):
@@ -116,7 +157,6 @@ def create_marketdata_plot(df):
     return pio.to_html(fig, full_html=False)
 
 
-
 def create_dashboard_plot(df):
     import plotly.graph_objs as go
     import plotly.io as pio
@@ -196,21 +236,22 @@ def setup_routes(app):
             grades = sorted(CONFIG[selected_market][selected_fruit][selected_variety].keys()) if selected_variety in CONFIG[selected_market][selected_fruit] else []
             selected_grade = request.args.get('grade', grades[0] if grades else '')
 
+            sale_periods_json = { "|".join(k): v for k, v in sale_periods.items() }
             return render_template('predict.html',
-                                   config=CONFIG,
-                                   markets=markets,
-                                   fruits=fruits,
-                                   varieties=varieties,
-                                   grades=grades,
-                                   selected_market=selected_market,
-                                   selected_fruit=selected_fruit,
-                                   selected_variety=selected_variety,
-                                   selected_grade=selected_grade,
-                                   num_predictions=7)
+                               config=CONFIG,
+                               sale_periods=sale_periods_json,  # 🛠 Add this line
+                               markets=markets,
+                               fruits=fruits,
+                               varieties=varieties,
+                               grades=grades,
+                               selected_market=selected_market,
+                               selected_fruit=selected_fruit,
+                               selected_variety=selected_variety,
+                               selected_grade=selected_grade)
         except Exception as e:
             logging.error(f"Error rendering template: {e}")
             return "Template not found", 404
-
+    
     @app.route('/predict_future', methods=['POST'])
     def predict_future():
         try:
@@ -218,57 +259,90 @@ def setup_routes(app):
             selected_fruit = request.form.get('fruit')
             selected_variety = request.form.get('variety')
             selected_grade = request.form.get('grade')
-            num_predictions = int(request.form.get('num_predictions', 7))
+            forecast_option = request.form.get('forecast_option')  # 'week' or 'fortnight'
+            start_date_str = request.form.get('start_date')
 
-            adjusted_market, location_key = selected_market, None
-            if selected_market.startswith('Pachhar'):
-                adjusted_market, location_key = 'Pulwama', 'Pachhar'
-            elif selected_market.startswith('Prichoo'):
-                adjusted_market, location_key = 'Pulwama', 'Prichoo'
+            if not start_date_str or not forecast_option:
+                return jsonify({'error': 'Start date and forecast option are required.'}), 400
 
-            try:
-                config_entry = CONFIG[adjusted_market][selected_fruit][location_key][selected_variety][selected_grade] if location_key else CONFIG[selected_market][selected_fruit][selected_variety][selected_grade]
-                model_path = config_entry['model']
-                data_path = config_entry['dataset']
-            except KeyError as e:
-                logging.error(f"Missing config entry: {e}")
-                return f"Dataset or model not found for: {selected_market}, {selected_fruit}, {selected_variety}, {selected_grade}", 404
+            start_date = pd.to_datetime(start_date_str)
+            
+            # Sale periods dictionary lookup
+            sale_key = (selected_market, selected_variety, selected_grade)
+            sale_info = sale_periods.get(sale_key)
+            if not sale_info:
+                return jsonify({'error': f'No sale period defined for {selected_market}, {selected_variety}, {selected_grade}.'}), 400
 
+            current_year = datetime.now().year
+            if current_year not in sale_info['years']:
+                return jsonify({'error': f'No sale period defined for {selected_market}, {selected_variety}, {selected_grade} in {current_year}.'}), 400
+
+            sale_start_date = pd.to_datetime(f"{current_year}-{sale_info['start']}")
+            sale_end_date = pd.to_datetime(f"{current_year}-{sale_info['end']}")
+
+            if start_date < sale_start_date or start_date > datetime.now():
+                return jsonify({'error': f'Start date {start_date.strftime("%Y-%m-%d")} is outside allowed range ({sale_start_date.strftime("%Y-%m-%d")} to today).'}), 400
+
+            # Load data and model
+            config_entry = CONFIG[selected_market][selected_fruit][selected_variety][selected_grade]
+            model_path = config_entry['model']
+            data_path = config_entry['dataset']
+            
             df = pd.read_csv(data_path)
             df = df[df['Mask'] == 1]
             df['Date'] = pd.to_datetime(df['Date'])
             df.sort_values(by='Date', inplace=True)
-
             prices = df['Avg Price (per kg)'].values.reshape(-1, 1)
             scaler = MinMaxScaler().fit(prices)
             model = load_model(model_path, custom_objects={'mse': MeanSquaredError()})
             time_steps = model.input_shape[1]
-
-            if len(prices) < time_steps:
-                return jsonify({'error': 'Not enough data to make a prediction.'}), 400
-
+            
+            # Generate full sale period forecast
+            total_forecast_days = (sale_end_date - sale_start_date).days + 1
             input_sequence = scaler.transform(prices[-time_steps:]).reshape(1, time_steps, 1)
             future_predictions = []
-            for _ in range(num_predictions):
+            for _ in range(total_forecast_days):
                 prediction = model.predict(input_sequence, verbose=0)
                 predicted_price = scaler.inverse_transform(prediction)
                 future_predictions.append(float(predicted_price[0][0]))
                 input_sequence = np.append(input_sequence[:, 1:, :], prediction.reshape(1, 1, 1), axis=1)
+            
+            forecast_dates_all = pd.date_range(start=sale_start_date, periods=total_forecast_days).to_list()
+            # Filter forecasts starting from start_date
+            filtered = [(d, p) for d, p in zip(forecast_dates_all, future_predictions) if d >= start_date]
 
-            forecast_dates = align_forecast_dates_to_previous_year(df, num_predictions, datetime.now().year)
-            forecast_plot = create_forecast_plot(forecast_dates, future_predictions)
-            predicted_prices = list(zip(forecast_dates, future_predictions))
+            forecast_length = 7 if forecast_option == 'week' else 14
+            filtered = filtered[:forecast_length]
+            if not filtered:
+                return jsonify({'error': f'No forecasts available starting from {start_date}.'}), 400
+            
+            forecast_dates = [d.strftime('%Y-%m-%d') for d, _ in filtered]
+            filtered_prices = [p for _, p in filtered]
+            
+            forecast_plot = create_forecast_plot(forecast_dates, filtered_prices)
+            predicted_prices = list(zip(forecast_dates, filtered_prices))
 
             fruits, varieties, grades = get_config_options(selected_market, selected_fruit, selected_variety)
-            return render_template('predict.html', config=CONFIG, markets=sorted(CONFIG.keys()), fruits=fruits,
-                                   varieties=varieties, grades=grades,
-                                   selected_market=selected_market, selected_fruit=selected_fruit,
-                                   selected_variety=selected_variety, selected_grade=selected_grade,
-                                   num_predictions=num_predictions, predicted_prices=predicted_prices,
-                                   trend_plot=forecast_plot)
+            sale_periods_json = { "|".join(k): v for k, v in sale_periods.items() }
+            return render_template('predict.html',
+                       config=CONFIG,
+                       sale_periods=sale_periods_json,  # Convert tuple keys to strings
+                       markets=sorted(CONFIG.keys()),
+                       fruits=fruits,
+                       varieties=varieties,
+                       grades=grades,
+                       selected_market=selected_market,
+                       selected_fruit=selected_fruit,
+                       selected_variety=selected_variety,
+                       selected_grade=selected_grade,
+                       predicted_prices=predicted_prices,
+                       trend_plot=forecast_plot,
+                       start_date=start_date.strftime('%Y-%m-%d'))
+            
         except Exception as e:
             logging.error(f"Prediction error: {e}")
             return jsonify({'error': 'Prediction failed.'}), 500
+
 
     @app.route('/dashboard')
     def dashboard():
@@ -356,7 +430,8 @@ def setup_routes(app):
         except Exception as e:
             logging.error(f"Dashboard error: {str(e)}")
             return render_template("dashboard.html", config=CONFIG, data=[], plot_data='[]', selected_market='', selected_fruit='', selected_variety='', selected_grade='', cards=[])
-    
+
+
     @mydash_bp.route('/mydash')
     def mydash():
         try:
