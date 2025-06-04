@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: market-intelligence-app
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python web/main.py
+    envVars:
+      - key: SECRET_KEY
+        value: dfbbirbgiu348fdugkjfg;jbskjgbkjdsbfgjbberii3
+    plan: free
+    autoDeploy: true
