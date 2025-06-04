@@ -227,7 +227,7 @@ def parse_dataset(file_path):
     except Exception as e:
         logging.warning(f"Skipping file {file_path} due to error: {e}")
         return None
-@lru_cache(maxsize=30)
+@lru_cache(maxsize=5)
 def load_model_cached(model_path_str):
     """Model path as string. Custom object support included."""
     print(f"🔁 Loading model from {model_path_str}...")
