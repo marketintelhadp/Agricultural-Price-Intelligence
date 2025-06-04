@@ -9,7 +9,7 @@ import logging
 from keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
 from keras.metrics import MeanSquaredError
-from config import CONFIG
+from web.config import CONFIG
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
