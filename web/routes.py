@@ -1,3 +1,7 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+
 from flask import request, jsonify, render_template, flash
 import numpy as np
 import pandas as pd

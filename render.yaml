@@ -3,9 +3,9 @@ services:
     name: market-intelligence-app
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn main:app --chdir web --bind 0.0.0.0:$PORT
+    startCommand: gunicorn web.main:app --bind 0.0.0.0:$PORT
     envVars:
       - key: SECRET_KEY
-        value: dfbbirbgiu348fdugkjfg;jbskjgbkjdsbfgjbberii3
+        value: your-secret-key
     plan: free
     autoDeploy: true

@@ -1,9 +1,11 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 from flask import Flask
 from web.routes import setup_routes, mydash_bp
 from web.realtime_routes import realtime_bp
 import os
 from dotenv import load_dotenv
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Load environment variables from .env
 load_dotenv()
