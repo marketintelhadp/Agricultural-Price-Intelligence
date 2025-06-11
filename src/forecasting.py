@@ -1,9 +1,9 @@
 import os
 import numpy as np
 import pandas as pd
-from keras.models import Sequential, load_model
-from keras.layers import LSTM, Dense, Dropout
-from keras.callbacks import EarlyStopping
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import logging
@@ -37,7 +37,6 @@ def find_best_seq_length(data, max_seq_length):
         if len(X) == 0:
             continue
 
-        # Define and train a temporary model
         temp_model = Sequential([
             LSTM(100, activation='relu', input_shape=(seq_length, 1)),
             Dense(1)
@@ -45,9 +44,7 @@ def find_best_seq_length(data, max_seq_length):
         temp_model.compile(optimizer='adam', loss='mse')
         temp_model.fit(X.reshape((X.shape[0], X.shape[1], 1)), y, epochs=50, batch_size=16, verbose=0)
 
-        # Evaluate the model
         predictions = temp_model.predict(X.reshape((X.shape[0], X.shape[1], 1)))
-        # Check for NaN in predictions or in the computed mse
         if np.isnan(predictions).any():
             logging.warning(f"Sequence length {seq_length}: predictions contain NaN, skipping this length.")
             continue
@@ -72,14 +69,13 @@ def train_lstm(data, seq_length):
 
     model = Sequential([
         LSTM(100, activation='relu', input_shape=(seq_length, 1), return_sequences=True),
-        Dropout(0.2),  # Dropout layer
+        Dropout(0.2),
         LSTM(50, activation='relu'),
-        Dropout(0.2),  # Dropout layer
+        Dropout(0.2),
         Dense(1)
     ])
     model.compile(optimizer='adam', loss='mse')
 
-    # Early stopping callback
     early_stopping = EarlyStopping(monitor='loss', patience=5, restore_best_weights=True)
 
     model.fit(X, y, epochs=100, batch_size=16, verbose=0, callbacks=[early_stopping])
@@ -93,9 +89,9 @@ def forecast_future(model, scaler, data, seq_length, forecast_days):
 
     predictions = []
     for _ in range(forecast_days):
-        next_price = model.predict(input_sequence)[0, 0]
+        next_price = model.predict(input_sequence, verbose=0)[0, 0]
         predictions.append(next_price)
-        input_sequence = np.append(input_sequence[:, 1:, :], [[[next_price]]], axis=1)  # Updated line
+        input_sequence = np.append(input_sequence[:, 1:, :], [[[next_price]]], axis=1)
 
     predictions = scaler.inverse_transform(np.array(predictions).reshape(-1, 1)).flatten()
     return predictions
@@ -109,18 +105,24 @@ def evaluate_model(model, X, y, scaler):
     mae = mean_absolute_error(y, predictions)
     return mse, mae
 
-def main():
-    market = ["Shopian"]  # Markets to process
-    varieties = ["Cherry"]  # Varieties
-    grades = ["Large","Medium","Small"]  # Grades, if applicable
-    forecast_days = 30  # Forecast for 10 days
-    max_seq_length = 40  # Maximum sequence length to search for
+# Save model in new format
+def save_model_keras(model, model_path):
+    model_path = model_path.replace('.h5', '.keras')
+    model.save(model_path, save_format='keras')
+    return model_path
 
+
+def main():
+    market = ["Azadpur"]
+    varieties = ["Makhmali"]
+    grades = ["Super", "Special", "Fancy"]
+    forecast_days = 15
+    max_seq_length = 40
+    
     results = {}
 
     for m in market:
         for variety in varieties:
-            # First, try to find a no-grade dataset:
             no_grade_path = f"data/raw/processed/{m}/{variety}_dataset.csv"
             if os.path.exists(no_grade_path):
                 logging.info(f"Processing {m} {variety} (no grade)...")
@@ -141,16 +143,14 @@ def main():
 
                 model, scaler = train_lstm(data, best_seq_length)
 
-                # Create output directories
                 model_forecasts_dir = f"model_forecasts/{m}/{variety}"
                 os.makedirs(model_forecasts_dir, exist_ok=True)
                 model_path = f"models/{m}/{variety}/lstm_{variety}.h5"
                 os.makedirs(os.path.dirname(model_path), exist_ok=True)
                 logging.info(f"Saving model to {model_path}...")
-                model.save(model_path)
+                save_model_keras(model, model_path)
                 logging.info("Model saved successfully.")
 
-                # Make predictions
                 predictions = forecast_future(model, scaler, data, best_seq_length, forecast_days)
                 std_dev = np.std(predictions)
                 lower_bound = predictions - 1.96 * std_dev
@@ -158,7 +158,6 @@ def main():
 
                 results[f"{variety}"] = predictions
 
-                # Plot forecasted prices with confidence intervals
                 plt.plot(range(forecast_days), predictions, label='Forecasted Prices', color='orange')
                 plt.fill_between(range(forecast_days), lower_bound, upper_bound, color='lightgray', alpha=0.5, label='Confidence Interval')
                 plt.title(f'Price Forecast for {variety} in {m}')
@@ -170,7 +169,6 @@ def main():
                 plt.close()
                 logging.info(f"Forecast for {variety}: {predictions}")
 
-                # Save forecasts to CSV
                 forecast_df = pd.DataFrame({
                     'Predictions': predictions,
                     'Lower Bound': lower_bound,
@@ -181,7 +179,6 @@ def main():
                 logging.info(f"Forecasts saved to {forecast_file_path}")
 
             else:
-                # Otherwise, iterate over grades
                 for grade in grades:
                     logging.info(f"Processing {m} {variety} Grade {grade}...")
                     data_path = f"data/raw/processed/{m}/{variety}_{grade}_dataset.csv"
@@ -213,7 +210,7 @@ def main():
                     model_path = f"models/{m}/{variety}/{grade}/lstm_{variety}_grade_{grade}.h5"
                     os.makedirs(os.path.dirname(model_path), exist_ok=True)
                     logging.info(f"Saving model to {model_path}...")
-                    model.save(model_path)
+                    save_model_keras(model, model_path)
                     logging.info("Model saved successfully.")
 
                     predictions = forecast_future(model, scaler, data, best_seq_length, forecast_days)
@@ -242,6 +239,3 @@ def main():
                     forecast_file_path = f"model_forecasts/{m}/{variety}/{grade}/{variety}_Grade_{grade}_forecasts.csv"
                     forecast_df.to_csv(forecast_file_path, index=False)
                     logging.info(f"Forecasts saved to {forecast_file_path}")
-
-if __name__ == "__main__":
-    main()
