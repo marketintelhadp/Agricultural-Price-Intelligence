@@ -8,15 +8,15 @@ CONFIG = {
         "Cherry": {
             "Makhmali": {
                 "Fancy": {
-                    "model": "models/Azadpur/Makhmali/Fancy/lstm_Makhmali_grade_Fancy.h5",
+                    "model": "models/Azadpur/Makhmali/Fancy/lstm_Makhmali_grade_Fancy.keras",
                     "dataset": "data/raw/processed/Azadpur/Makhmali_Fancy_dataset.csv"
                 },
                 "Special": {
-                    "model": "models/Azadpur/Makhmali/Special/lstm_Makhmali_grade_Special.h5",
+                    "model": "models/Azadpur/Makhmali/Special/lstm_Makhmali_grade_Special.keras",
                     "dataset": "data/raw/processed/Azadpur/Makhmali_Special_dataset.csv"
                 },
                 "Super": {
-                    "model": "models/Azadpur/Makhmali/Super/lstm_Makhmali_grade_Super.h5",
+                    "model": "models/Azadpur/Makhmali/Super/lstm_Makhmali_grade_Super.keras",
                     "dataset": "data/raw/processed/Azadpur/Makhmali_Super_dataset.csv"
                 }
             },

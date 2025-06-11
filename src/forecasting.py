@@ -239,3 +239,6 @@ def main():
                     forecast_file_path = f"model_forecasts/{m}/{variety}/{grade}/{variety}_Grade_{grade}_forecasts.csv"
                     forecast_df.to_csv(forecast_file_path, index=False)
                     logging.info(f"Forecasts saved to {forecast_file_path}")
+
+if __name__ == "__main__":
+    main()

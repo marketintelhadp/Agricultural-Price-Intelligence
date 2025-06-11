@@ -227,11 +227,13 @@ def parse_dataset(file_path):
     except Exception as e:
         logging.warning(f"Skipping file {file_path} due to error: {e}")
         return None
-@lru_cache(maxsize=5)
-def load_model_cached(model_path_str):
-    """Model path as string. Custom object support included."""
-    print(f"🔁 Loading model from {model_path_str}...")
-    return load_model(model_path_str, custom_objects={'mse': MeanSquaredError()})
+    
+
+from tensorflow.keras.models import load_model
+
+@lru_cache(maxsize=10)
+def load_model_cached(model_path):
+    return load_model(model_path, compile=False)
 
 def forecast_sequence(model, input_seq, days, scaler):
     """Efficient batch prediction loop."""
@@ -309,35 +311,28 @@ def setup_routes(app):
             if start_date < sale_start_date or start_date > datetime.now():
                 return jsonify({'error': f'Start date {start_date.strftime("%Y-%m-%d")} is outside allowed range ({sale_start_date.strftime("%Y-%m-%d")} to today).'}), 400
 
-            # Load config, model, data
-            config_entry = CONFIG[selected_market][selected_fruit][selected_variety][selected_grade]
-            model = load_model_cached(config_entry['model'])
-            df = pd.read_csv(config_entry['dataset'])
-            df = df[df['Mask'] == 1]
-            df['Date'] = pd.to_datetime(df['Date'])
-            df.sort_values(by='Date', inplace=True)
-            prices = df['Avg Price (per kg)'].values.reshape(-1, 1)
+            # ✅ Load precomputed forecast CSV
+            forecast_file = f"data/forecasts/{selected_market}_{selected_variety}_{selected_grade}_forecast.csv"
+            if not os.path.exists(forecast_file):
+                return jsonify({'error': 'Forecast data not yet generated. Please try later.'}), 500
 
-            scaler = MinMaxScaler().fit(prices)
-            time_steps = model.input_shape[1]
-            total_forecast_days = (sale_end_date - sale_start_date).days + 1
+            forecast_df = pd.read_csv(forecast_file)
+            forecast_df['Date'] = pd.to_datetime(forecast_df['Date'])
 
-            input_sequence = scaler.transform(prices[-time_steps:]).reshape(1, time_steps, 1)
-            future_predictions = forecast_sequence(model, input_sequence, total_forecast_days, scaler)
-
-            forecast_dates_all = pd.date_range(start=sale_start_date, periods=total_forecast_days).to_list()
-            filtered = [(d, p) for d, p in zip(forecast_dates_all, future_predictions) if d >= start_date]
-
+            # ✅ Filter forecast from selected start_date
+            forecast_df = forecast_df[forecast_df['Date'] >= start_date]
             forecast_length = 7 if forecast_option == 'week' else 14
-            filtered = filtered[:forecast_length]
-            if not filtered:
-                return jsonify({'error': f'No forecasts available starting from {start_date}.'}), 400
+            filtered = forecast_df.head(forecast_length)
 
-            forecast_dates = [d.strftime('%Y-%m-%d') for d, _ in filtered]
-            filtered_prices = [p for _, p in filtered]
+            if filtered.empty:
+                return jsonify({'error': f'No forecasts available starting from {start_date.strftime("%Y-%m-%d")}.'}), 400
+
+            forecast_dates = filtered['Date'].dt.strftime('%Y-%m-%d').tolist()
+            filtered_prices = filtered['Forecast'].tolist()
             forecast_plot = create_forecast_plot(forecast_dates, filtered_prices)
             predicted_prices = list(zip(forecast_dates, filtered_prices))
 
+            # Prepare dropdown reload
             fruits, varieties, grades = get_config_options(selected_market, selected_fruit, selected_variety)
             sale_periods_json = {"|".join(k): v for k, v in sale_periods.items()}
 
