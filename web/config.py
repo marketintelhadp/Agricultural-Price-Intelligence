@@ -90,15 +90,15 @@ CONFIG = {
         "Cherry": {
             "Cherry": {
                 "Large": {
-                    "model": "models/Narwal/Cherry/Large/lstm_Cherry_grade_Large.h5",
+                    "model": "models/Narwal/Cherry/Large/lstm_Cherry_grade_Large.keras",
                     "dataset": "data/raw/processed/Narwal/Cherry_Large_dataset.csv"
                 },
                 "Medium": {
-                    "model": "models/Narwal/Cherry/Medium/lstm_Cherry_grade_Medium.h5",
+                    "model": "models/Narwal/Cherry/Medium/lstm_Cherry_grade_Medium.keras",
                     "dataset": "data/raw/processed/Narwal/Cherry_Medium_dataset.csv"
                 },
                 "Small": {
-                    "model": "models/Narwal/Cherry/Small/lstm_Cherry_grade_Small.h5",
+                    "model": "models/Narwal/Cherry/Small/lstm_Cherry_grade_Small.keras",
                     "dataset": "data/raw/processed/Narwal/Cherry_Small_dataset.csv"
                 }
             }

@@ -113,9 +113,9 @@ def save_model_keras(model, model_path):
 
 
 def main():
-    market = ["Azadpur"]
-    varieties = ["Makhmali"]
-    grades = ["Super", "Special", "Fancy"]
+    market = ["Parimpore"]
+    varieties = ["Cherry"]
+    grades = ["Large", "Medium", "Small"]
     forecast_days = 15
     max_seq_length = 40
     

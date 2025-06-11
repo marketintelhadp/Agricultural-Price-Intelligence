@@ -156,9 +156,9 @@ def visualize_data(df, output_folder):
 # 7. Main Function
 # ------------------------------------------------------------------------------
 def main():
-    file_path = r"data/raw/Azadpur Cherry.xlsx"
-    output_folder = r"data/raw/processed/Azadpur"
-    eda_folder = r"Data_exploration_results/Azadpur/cherry"
+    file_path = r"data/raw/ParimporeCherry.xlsx"
+    output_folder = r"data/raw/processed/Parimpore"
+    eda_folder = r"Data_exploration_results/Parimpore/cherry"
 
     # Ensure directories exist
     os.makedirs(output_folder, exist_ok=True)
