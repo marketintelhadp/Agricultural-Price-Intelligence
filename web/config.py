@@ -22,15 +22,15 @@ CONFIG = {
             },
             "Misri": {
                 "Fancy": {
-                    "model": "models/Azadpur/Misri/Fancy/lstm_Misri_grade_Fancy.h5",
+                    "model": "models/Azadpur/Misri/Fancy/lstm_Misri_grade_Fancy.keras",
                     "dataset": "data/raw/processed/Azadpur/Misri_Fancy_dataset.csv"
                 },
                 "Special": {
-                    "model": "models/Azadpur/Misri/Special/lstm_Misri_grade_Special.h5",
+                    "model": "models/Azadpur/Misri/Special/lstm_Misri_grade_Special.keras",
                     "dataset": "data/raw/processed/Azadpur/Misri_Special_dataset.csv"
                 },
                 "Super": {
-                    "model": "models/Azadpur/Misri/Super/lstm_Misri_grade_Super.h5",
+                    "model": "models/Azadpur/Misri/Super/lstm_Misri_grade_Super.keras",
                     "dataset": "data/raw/processed/Azadpur/Misri_Super_dataset.csv"
                 }
             }
@@ -40,15 +40,15 @@ CONFIG = {
         "Cherry": {
             "Cherry": {
                 "Large": {
-                    "model": "models/Ganderbal/Cherry/Large/lstm_Cherry_grade_Large.h5",
+                    "model": "models/Ganderbal/Cherry/Large/lstm_Cherry_grade_Large.keras",
                     "dataset": "data/raw/processed/Ganderbal/Cherry_Large_dataset.csv"
                 },
                 "Medium": {
-                    "model": "models/Ganderbal/Cherry/Medium/lstm_Cherry_grade_Medium.h5",
+                    "model": "models/Ganderbal/Cherry/Medium/lstm_Cherry_grade_Medium.keras",
                     "dataset": "data/raw/processed/Ganderbal/Cherry_Medium_dataset.csv"
                 },
                 "Small": {
-                    "model": "models/Ganderbal/Cherry/Small/lstm_Cherry_grade_Small.h5",
+                    "model": "models/Ganderbal/Cherry/Small/lstm_Cherry_grade_Small.keras",
                     "dataset": "data/raw/processed/Ganderbal/Cherry_Small_dataset.csv"
                 }
             }
@@ -108,15 +108,15 @@ CONFIG = {
         "Cherry": {
             "Cherry": {
                 "Large": {
-                    "model": "models/Parimpore/Cherry/Large/lstm_Cherry_grade_Large.h5",
+                    "model": "models/Parimpore/Cherry/Large/lstm_Cherry_grade_Large.keras",
                     "dataset": "data/raw/processed/Parimpore/Cherry_Large_dataset.csv"
                 },
                 "Medium": {
-                    "model": "models/Parimpore/Cherry/Medium/lstm_Cherry_grade_Medium.h5",
+                    "model": "models/Parimpore/Cherry/Medium/lstm_Cherry_grade_Medium.keras",
                     "dataset": "data/raw/processed/Parimpore/Cherry_Medium_dataset.csv"
                 },
                 "Small": {
-                    "model": "models/Parimpore/Cherry/Small/lstm_Cherry_grade_Small.h5",
+                    "model": "models/Parimpore/Cherry/Small/lstm_Cherry_grade_Small.keras",
                     "dataset": "data/raw/processed/Parimpore/Cherry_Small_dataset.csv"
                 }
             }
@@ -194,15 +194,15 @@ CONFIG = {
         "Cherry": {
             "Cherry": {
                 "Large": {
-                    "model": "models/Shopian/Cherry/Large/lstm_Cherry_grade_Large.h5",
+                    "model": "models/Shopian/Cherry/Large/lstm_Cherry_grade_Large.keras",
                     "dataset": "data/raw/processed/Shopian/Cherry_Large_dataset.csv"
                 },
                 "Medium": {
-                    "model": "models/Shopian/Cherry/Medium/lstm_Cherry_grade_Medium.h5",
+                    "model": "models/Shopian/Cherry/Medium/lstm_Cherry_grade_Medium.keras",
                     "dataset": "data/raw/processed/Shopian/Cherry_Medium_dataset.csv"
                 },
                 "Small": {
-                    "model": "models/Shopian/Cherry/Small/lstm_Cherry_grade_Small.h5",
+                    "model": "models/Shopian/Cherry/Small/lstm_Cherry_grade_Small.keras",
                     "dataset": "data/raw/processed/Shopian/Cherry_Small_dataset.csv"
                 }
             }
