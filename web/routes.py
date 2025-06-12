@@ -290,12 +290,13 @@ def setup_routes(app):
             selected_variety = request.form.get('variety')
             selected_grade = request.form.get('grade')
             forecast_option = request.form.get('forecast_option')  # 'week' or 'fortnight'
-            start_date_str = request.form.get('start_date')
 
-            if not start_date_str or not forecast_option:
-                return jsonify({'error': 'Start date and forecast option are required.'}), 400
+            # ✅ Use today's date as start_date
+            start_date = pd.to_datetime(datetime.today().date())
 
-            start_date = pd.to_datetime(start_date_str)
+            if not forecast_option:
+                return jsonify({'error': 'Forecast option is required.'}), 400
+
             sale_key = (selected_market, selected_variety, selected_grade)
             sale_info = sale_periods.get(sale_key)
             if not sale_info:

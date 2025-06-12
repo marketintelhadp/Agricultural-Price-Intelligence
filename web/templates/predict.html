@@ -33,7 +33,7 @@
         <div><label for="fruit">Fruit:</label><select id="fruit" name="fruit" required></select></div>
         <div><label for="variety">Variety:</label><select id="variety" name="variety" required></select></div>
         <div><label for="grade">Grade:</label><select id="grade" name="grade" required></select></div>
-        <div><label for="start_date">Start Date:</label><input type="date" id="start_date" name="start_date" required></div>
+        <!-- REMOVED: Start Date field -->
         <div>
             <label for="forecast_option">Forecast Option:</label>
             <select id="forecast_option" name="forecast_option" required>
@@ -76,12 +76,10 @@
 
 <script>
     const configData = {{ config | tojson | safe }};
-    const salePeriodsData = {{ sale_periods | tojson | safe }};
     const marketSelect = document.getElementById("market");
     const fruitSelect = document.getElementById("fruit");
     const varietySelect = document.getElementById("variety");
     const gradeSelect = document.getElementById("grade");
-    const startDateInput = document.getElementById("start_date");
 
     function populate(select, options, selectedValue = null) {
         select.innerHTML = "";
@@ -109,36 +107,40 @@
         const variety = varietySelect.value;
         const grades = locationKey ? Object.keys(configData[configKey]?.[fruit]?.[locationKey]?.[variety] || {}) : Object.keys(configData[configKey]?.[fruit]?.[variety] || {});
         populate(gradeSelect, grades, setDefaults ? "{{ selected_grade }}" : gradeSelect.value);
-
-        updateStartDateConstraints(market, fruit, variety, gradeSelect.value);
     }
 
-    function updateStartDateConstraints(market, fruit, variety, grade) {
-        const today = new Date().toISOString().split('T')[0];
-        const saleKey = [market, variety, grade].join("|");
-        const saleInfo = salePeriodsData[saleKey];
-        if (saleInfo) {
-            const currentYear = new Date().getFullYear();
-            if (saleInfo.years.includes(currentYear)) {
-                startDateInput.min = `${currentYear}-${saleInfo.start}`;
-                startDateInput.max = today;
-                return;
-            }
-        }
-        startDateInput.min = ""; startDateInput.max = today;
-    }
-
-    marketSelect.addEventListener("change", () => updateDependentDropdowns(true));
     fruitSelect.addEventListener("change", () => updateDependentDropdowns());
     varietySelect.addEventListener("change", () => updateDependentDropdowns());
 
-    window.onload = () => {
+    function filterMarketsByFruit(fruit) {
         const rawMarkets = Object.keys(configData);
-        const markets = rawMarkets.filter(m => m !== "Pulwama");
-        if (rawMarkets.includes("Pulwama")) { markets.push("Pachhar Pulwama"); markets.push("Prichoo Pulwama"); }
+        let markets = rawMarkets.filter(m => m !== "Pulwama" && m !== "Sopore");
+
+        if (fruit === "Apple") {
+            if (rawMarkets.includes("Pulwama")) {
+                markets.push("Pachhar Pulwama");
+                markets.push("Prichoo Pulwama");
+            }
+            if (rawMarkets.includes("Sopore")) {
+                markets.push("Sopore");
+            }
+        }
+
+        return markets;
+    }
+    window.onload = () => {
+        const initialFruit = "{{ selected_fruit }}" || Object.keys(configData[Object.keys(configData)[0]])[0];
+        const markets = filterMarketsByFruit(initialFruit);
         populate(marketSelect, markets, "{{ selected_market }}");
         updateDependentDropdowns(true);
     };
+
+    fruitSelect.addEventListener("change", () => {
+        const newMarkets = filterMarketsByFruit(fruitSelect.value);
+        populate(marketSelect, newMarkets);
+        updateDependentDropdowns();
+    });
+
 </script>
 </body>
 </html>
