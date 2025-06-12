@@ -31,7 +31,7 @@ def create_sequences(data, seq_length):
 def find_best_seq_length(data, max_seq_length):
     best_seq_length = 0
     best_mse = float('inf')
-
+    #for seq_length in range(20, max_seq_length + 1):
     for seq_length in range(1, max_seq_length + 1):
         X, y = create_sequences(data[['Avg Price (per kg)']].values, seq_length)
         if len(X) == 0:
@@ -113,9 +113,9 @@ def save_model_keras(model, model_path):
 
 
 def main():
-    market = ["Azadpur"]
-    varieties = ["Misri"]
-    grades = ["Super", "Special", "Fancy"]
+    market = ["Sopore"]
+    varieties = ["Maharaji"]
+    grades = ["A","B"]
     forecast_days = 15
     max_seq_length = 40
     
