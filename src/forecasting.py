@@ -32,7 +32,7 @@ def find_best_seq_length(data, max_seq_length):
     best_seq_length = 0
     best_mse = float('inf')
     #for seq_length in range(20, max_seq_length + 1):
-    for seq_length in range(1, max_seq_length + 1):
+    for seq_length in range(10, max_seq_length + 1):
         X, y = create_sequences(data[['Avg Price (per kg)']].values, seq_length)
         if len(X) == 0:
             continue
@@ -112,133 +112,145 @@ def save_model_keras(model, model_path):
     return model_path
 
 
+import os
+import pandas as pd
+import numpy as np
+import logging
+import matplotlib.pyplot as plt
+
 def main():
-    market = ["Sopore"]
-    varieties = ["Maharaji"]
-    grades = ["A","B"]
+    markets = ["Pulwama"]
+    submarket_map = {
+        "Pulwama": ["Pachhar", "Prichoo"],
+        "Shopian": None  # No submarkets
+    }
+
+    varieties = ["American", "Delicious", "Kullu Delicious"]
+    grades = ["A", "B"]
     forecast_days = 15
     max_seq_length = 40
-    
     results = {}
 
-    for m in market:
-        for variety in varieties:
-            no_grade_path = f"data/raw/processed/{m}/{variety}_dataset.csv"
-            if os.path.exists(no_grade_path):
-                logging.info(f"Processing {m} {variety} (no grade)...")
-                data = pd.read_csv(no_grade_path)
-                if 'Avg Price (per kg)' not in data.columns or 'Mask' not in data.columns:
-                    logging.error(f"Missing required columns in {no_grade_path}")
-                    continue
-                if data[['Avg Price (per kg)', 'Mask']].isnull().any().any():
-                    logging.error(f"NaN values found in {no_grade_path}.")
-                    continue
-                data = data[data['Mask'] == 1]
-                if data.empty or data['Avg Price (per kg)'].isnull().any():
-                    logging.error(f"Filtered data is empty or contains NaN values for {no_grade_path}.")
-                    continue
+    for market in markets:
+        submarkets = submarket_map.get(market)
+        submarkets = submarkets or [None]  # Handle no-submarket case
 
-                best_seq_length = find_best_seq_length(data, max_seq_length)
-                logging.info(f"Best sequence length for {variety} (no grade): {best_seq_length}")
+        for submarket in submarkets:
+            base_path = f"data/raw/processed/{market}"
+            if submarket:
+                base_path = f"{base_path}/{submarket}"
 
-                model, scaler = train_lstm(data, best_seq_length)
-
-                model_forecasts_dir = f"model_forecasts/{m}/{variety}"
-                os.makedirs(model_forecasts_dir, exist_ok=True)
-                model_path = f"models/{m}/{variety}/lstm_{variety}.h5"
-                os.makedirs(os.path.dirname(model_path), exist_ok=True)
-                logging.info(f"Saving model to {model_path}...")
-                save_model_keras(model, model_path)
-                logging.info("Model saved successfully.")
-
-                predictions = forecast_future(model, scaler, data, best_seq_length, forecast_days)
-                std_dev = np.std(predictions)
-                lower_bound = predictions - 1.96 * std_dev
-                upper_bound = predictions + 1.96 * std_dev
-
-                results[f"{variety}"] = predictions
-
-                plt.plot(range(forecast_days), predictions, label='Forecasted Prices', color='orange')
-                plt.fill_between(range(forecast_days), lower_bound, upper_bound, color='lightgray', alpha=0.5, label='Confidence Interval')
-                plt.title(f'Price Forecast for {variety} in {m}')
-                plt.xlabel('Days')
-                plt.ylabel('Price (per kg)')
-                plt.legend()
-                plot_path = f"model_forecasts/{m}/{variety}/{variety}_forecast.png"
-                plt.savefig(plot_path)
-                plt.close()
-                logging.info(f"Forecast for {variety}: {predictions}")
-
-                forecast_df = pd.DataFrame({
-                    'Predictions': predictions,
-                    'Lower Bound': lower_bound,
-                    'Upper Bound': upper_bound
-                })
-                forecast_file_path = f"model_forecasts/{m}/{variety}/{variety}_forecasts.csv"
-                forecast_df.to_csv(forecast_file_path, index=False)
-                logging.info(f"Forecasts saved to {forecast_file_path}")
-
-            else:
-                for grade in grades:
-                    logging.info(f"Processing {m} {variety} Grade {grade}...")
-                    data_path = f"data/raw/processed/{m}/{variety}_{grade}_dataset.csv"
-                    if not os.path.exists(data_path):
-                        logging.warning(f"File not found: {data_path}")
-                        continue
-
-                    data = pd.read_csv(data_path)
+            for variety in varieties:
+                # Check if file without grade exists
+                no_grade_path = f"{base_path}/{variety}_dataset.csv"
+                if os.path.exists(no_grade_path):
+                    logging.info(f"Processing {market} {submarket or ''} {variety} (no grade)...")
+                    data = pd.read_csv(no_grade_path)
                     if 'Avg Price (per kg)' not in data.columns or 'Mask' not in data.columns:
-                        logging.error(f"Missing required columns in {data_path}")
+                        logging.error(f"Missing required columns in {no_grade_path}")
                         continue
-
                     if data[['Avg Price (per kg)', 'Mask']].isnull().any().any():
-                        logging.error(f"NaN values found in {data_path}.")
+                        logging.error(f"NaN values found in {no_grade_path}.")
                         continue
-
                     data = data[data['Mask'] == 1]
                     if data.empty or data['Avg Price (per kg)'].isnull().any():
-                        logging.error(f"Filtered data is empty or contains NaN values for {data_path}.")
+                        logging.error(f"Filtered data is empty or contains NaN values for {no_grade_path}.")
                         continue
 
                     best_seq_length = find_best_seq_length(data, max_seq_length)
-                    logging.info(f"Best sequence length for {variety} Grade {grade}: {best_seq_length}")
-
                     model, scaler = train_lstm(data, best_seq_length)
 
-                    model_forecasts_dir = f"model_forecasts/{m}/{variety}/{grade}"
-                    os.makedirs(model_forecasts_dir, exist_ok=True)
-                    model_path = f"models/{m}/{variety}/{grade}/lstm_{variety}_grade_{grade}.h5"
-                    os.makedirs(os.path.dirname(model_path), exist_ok=True)
-                    logging.info(f"Saving model to {model_path}...")
+                    save_prefix = f"{market}/{submarket}/{variety}" if submarket else f"{market}/{variety}"
+                    model_dir = f"models/{save_prefix}"
+                    forecast_dir = f"model_forecasts/{save_prefix}"
+                    os.makedirs(model_dir, exist_ok=True)
+                    os.makedirs(forecast_dir, exist_ok=True)
+
+                    model_path = f"{model_dir}/lstm_{variety}.h5"
                     save_model_keras(model, model_path)
-                    logging.info("Model saved successfully.")
 
                     predictions = forecast_future(model, scaler, data, best_seq_length, forecast_days)
                     std_dev = np.std(predictions)
                     lower_bound = predictions - 1.96 * std_dev
                     upper_bound = predictions + 1.96 * std_dev
 
-                    results[f"{variety}_grade_{grade}"] = predictions
+                    key_name = f"{market}_{submarket}_{variety}" if submarket else f"{market}_{variety}"
+                    results[key_name] = predictions
 
+                    # Plot
                     plt.plot(range(forecast_days), predictions, label='Forecasted Prices', color='orange')
-                    plt.fill_between(range(forecast_days), lower_bound, upper_bound, color='lightgray', alpha=0.5, label='Confidence Interval')
-                    plt.title(f'Price Forecast for {variety} Grade {grade} in {m}')
+                    plt.fill_between(range(forecast_days), lower_bound, upper_bound, color='lightgray', alpha=0.5)
+                    plt.title(f'Price Forecast: {variety} in {submarket or market}')
                     plt.xlabel('Days')
                     plt.ylabel('Price (per kg)')
                     plt.legend()
-                    plot_path = f"model_forecasts/{m}/{variety}/{grade}/{variety}_grade_{grade}_forecast.png"
-                    plt.savefig(plot_path)
+                    plt.savefig(f"{forecast_dir}/{variety}_forecast.png")
                     plt.close()
-                    logging.info(f"Forecast for {variety} Grade {grade}: {predictions}")
 
                     forecast_df = pd.DataFrame({
                         'Predictions': predictions,
                         'Lower Bound': lower_bound,
                         'Upper Bound': upper_bound
                     })
-                    forecast_file_path = f"model_forecasts/{m}/{variety}/{grade}/{variety}_Grade_{grade}_forecasts.csv"
-                    forecast_df.to_csv(forecast_file_path, index=False)
-                    logging.info(f"Forecasts saved to {forecast_file_path}")
+                    forecast_df.to_csv(f"{forecast_dir}/{variety}_forecasts.csv", index=False)
+
+                else:
+                    for grade in grades:
+                        data_path = f"{base_path}/{variety}_{grade}_dataset.csv"
+                        if not os.path.exists(data_path):
+                            logging.warning(f"File not found: {data_path}")
+                            continue
+
+                        logging.info(f"Processing {market} {submarket or ''} {variety} Grade {grade}...")
+
+                        data = pd.read_csv(data_path)
+                        if 'Avg Price (per kg)' not in data.columns or 'Mask' not in data.columns:
+                            logging.error(f"Missing required columns in {data_path}")
+                            continue
+                        if data[['Avg Price (per kg)', 'Mask']].isnull().any().any():
+                            logging.error(f"NaN values found in {data_path}.")
+                            continue
+                        data = data[data['Mask'] == 1]
+                        if data.empty or data['Avg Price (per kg)'].isnull().any():
+                            logging.error(f"Filtered data is empty or contains NaN values for {data_path}.")
+                            continue
+
+                        best_seq_length = find_best_seq_length(data, max_seq_length)
+                        model, scaler = train_lstm(data, best_seq_length)
+
+                        save_prefix = f"{market}/{submarket}/{variety}/{grade}" if submarket else f"{market}/{variety}/{grade}"
+                        model_dir = f"models/{save_prefix}"
+                        forecast_dir = f"model_forecasts/{save_prefix}"
+                        os.makedirs(model_dir, exist_ok=True)
+                        os.makedirs(forecast_dir, exist_ok=True)
+
+                        model_path = f"{model_dir}/lstm_{variety}_grade_{grade}.h5"
+                        save_model_keras(model, model_path)
+
+                        predictions = forecast_future(model, scaler, data, best_seq_length, forecast_days)
+                        std_dev = np.std(predictions)
+                        lower_bound = predictions - 1.96 * std_dev
+                        upper_bound = predictions + 1.96 * std_dev
+
+                        key_name = f"{market}_{submarket}_{variety}_grade_{grade}" if submarket else f"{market}_{variety}_grade_{grade}"
+                        results[key_name] = predictions
+
+                        # Plot
+                        plt.plot(range(forecast_days), predictions, label='Forecasted Prices', color='orange')
+                        plt.fill_between(range(forecast_days), lower_bound, upper_bound, color='lightgray', alpha=0.5)
+                        plt.title(f'Price Forecast: {variety} Grade {grade} in {submarket or market}')
+                        plt.xlabel('Days')
+                        plt.ylabel('Price (per kg)')
+                        plt.legend()
+                        plt.savefig(f"{forecast_dir}/{variety}_grade_{grade}_forecast.png")
+                        plt.close()
+
+                        forecast_df = pd.DataFrame({
+                            'Predictions': predictions,
+                            'Lower Bound': lower_bound,
+                            'Upper Bound': upper_bound
+                        })
+                        forecast_df.to_csv(f"{forecast_dir}/{variety}_Grade_{grade}_forecasts.csv", index=False)
 
 if __name__ == "__main__":
     main()
