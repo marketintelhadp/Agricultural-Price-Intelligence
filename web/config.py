@@ -210,41 +210,41 @@ CONFIG = {
         "Apple": {
             "American": {
                 "A": {
-                    "model": "models/Shopian/lstm_American_grade_A.keras",
+                    "model": "models/Shopian/American/A/lstm_American_grade_A.keras",
                     "dataset": "data/raw/processed/Shopian/American_A_dataset.csv"
                 },
                 "B": {
-                    "model": "models/Shopian/lstm_American_grade_B.keras",
+                    "model": "models/Shopian/American/B/lstm_American_grade_B.keras",
                     "dataset": "data/raw/processed/Shopian/American_B_dataset.csv"
                 }
             },
             "Delicious": {
                 "A": {
-                    "model": "models/Shopian/lstm_Delicious_grade_A.keras",
+                    "model": "models/Shopian/Delicious/A/lstm_Delicious_grade_A.keras",
                     "dataset": "data/raw/processed/Shopian/Delicious_A_dataset.csv"
                 },
                 "B": {
-                    "model": "models/Shopian/lstm_Delicious_grade_B.keras",
+                    "model": "models/Shopian/Delicious/B/lstm_Delicious_grade_B.keras",
                     "dataset": "data/raw/processed/Shopian/Delicious_B_dataset.csv"
                 }
             },
             "Kullu Delicious": {
                 "A": {
-                    "model": "models/Shopian/lstm_Kullu Delicious_grade_A.keras",
+                    "model": "models/Shopian/Kullu Delicious/A/lstm_Kullu Delicious_grade_A.keras",
                     "dataset": "data/raw/processed/Shopian/Kullu Delicious_A_dataset.csv"
                 },
                 "B": {
-                    "model": "models/Shopian/lstm_Kullu Delicious_grade_B.keras",
+                    "model": "models/Shopian/Kullu Delicious/B/lstm_Kullu Delicious_grade_B.keras",
                     "dataset": "data/raw/processed/Shopian/Kullu Delicious_B_dataset.csv"
                 }
             },
             "Maharaji": {
                 "A": {
-                    "model": "models/Shopian/lstm_Maharaji_grade_A.keras",
+                    "model": "models/Shopian/Maharaji/A/lstm_Maharaji_grade_A.keras",
                     "dataset": "data/raw/processed/Shopian/Maharaji_A_dataset.csv"
                 },
                 "B": {
-                    "model": "models/Shopian/lstm_Maharaji_grade_B.keras",
+                    "model": "models/Shopian/Maharaji/B/lstm_Maharaji_grade_B.keras",
                     "dataset": "data/raw/processed/Shopian/Maharaji_B_dataset.csv"
                 }
             }
@@ -254,31 +254,31 @@ CONFIG = {
         "Apple": {
             "American": {
                 "A": {
-                    "model": "models/Sopore/Sopore/American/A/lstm_American_grade_A.keras",
+                    "model": "models/Sopore/American/A/lstm_American_grade_A.keras",
                     "dataset": "data/raw/processed/Sopore/American_A_dataset.csv"
                 },
                 "B": {
-                    "model": "models/Sopore/Sopore/American/B/lstm_American_grade_B.keras",
+                    "model": "models/Sopore/American/B/lstm_American_grade_B.keras",
                     "dataset": "data/raw/processed/Sopore/American_B_dataset.csv"
                 }
             },
             "Delicious": {
                 "A": {
-                    "model": "models/Sopore/Sopore/Delicious/A/lstm_Delicious_grade_A.keras",
+                    "model": "models/Sopore/Delicious/A/lstm_Delicious_grade_A.keras",
                     "dataset": "data/raw/processed/Sopore/Delicious_A_dataset.csv"
                 },
                 "B": {
-                    "model": "models/Sopore/Sopore/Delicious/B/lstm_Delicious_grade_B.keras",
+                    "model": "models/Sopore/Delicious/B/lstm_Delicious_grade_B.keras",
                     "dataset": "data/raw/processed/Sopore/Delicious_B_dataset.csv"
                 }
             },
             "Maharaji": {
                 "A": {
-                    "model": "models/Sopore/Sopore/Maharaji/A/lstm_Maharaji_grade_A.keras",
+                    "model": "models/Sopore/Maharaji/A/lstm_Maharaji_grade_A.keras",
                     "dataset": "data/raw/processed/Sopore/Maharaji_A_dataset.csv"
                 },
                 "B": {
-                    "model": "models/Sopore/Sopore/Maharaji/B/lstm_Maharaji_grade_B.keras",
+                    "model": "models/Sopore/Maharaji/B/lstm_Maharaji_grade_B.keras",
                     "dataset": "data/raw/processed/Sopore/Maharaji_B_dataset.csv"
                 }
             }

@@ -47,14 +47,14 @@ sale_periods = {
     ('Ganderbal', 'Cherry', 'Large'): {'start': '05-13', 'end': '06-28', 'years': list(range(2019, 2026))},
     ('Ganderbal', 'Cherry', 'Medium'): {'start': '05-13', 'end': '06-28', 'years': list(range(2019, 2026))},
     ('Ganderbal', 'Cherry', 'Small'): {'start': '05-13', 'end': '06-28', 'years': list(range(2019, 2026))},
-    ('Narwal', 'American', 'Unknown'): {'start': '09-01', 'end': '12-30', 'years': list(range(2011, 2026))},
     ('Narwal', 'Cherry', 'Large'): {'start': '05-15', 'end': '07-10', 'years': list(range(2016, 2026))},
     ('Narwal', 'Cherry', 'Medium'): {'start': '05-15', 'end': '07-10', 'years': list(range(2016, 2026))},
     ('Narwal', 'Cherry', 'Small'): {'start': '05-15', 'end': '07-10', 'years': list(range(2016, 2026))},
-    ('Narwal', 'Condition', 'Unknown'): {'start': '07-01', 'end': '08-31', 'years': list(range(2019, 2026))},
-    ('Narwal', 'Delicious', 'Unknown'): {'start': '01-01', 'end': '12-31', 'years': list(range(2011, 2026))},
-    ('Narwal', 'Hazratbali', 'Unknown'): {'start': '07-01', 'end': '08-30', 'years': list(range(2011, 2026))},
-    ('Narwal', 'Razakwadi', 'Unknown'): {'start': '08-01', 'end': '08-30', 'years': list(range(2013, 2026))},
+    ('Narwal', 'American', '_'): {'start': '09-01', 'end': '12-31', 'years': list(range(2011, 2026))},
+    ('Narwal', 'Condition', '_'): {'start': '07-01', 'end': '08-31', 'years': list(range(2019, 2026))},
+    ('Narwal', 'Delicious', '_'): {'start': '08-01', 'end': '02-28', 'years': list(range(2011, 2026))},
+    ('Narwal', 'Hazratbali', '_'): {'start': '07-01', 'end': '08-31', 'years': list(range(2011, 2026))},
+    ('Narwal', 'Razakwadi', '_'): {'start': '08-01', 'end': '08-31', 'years': list(range(2013, 2026))},
     ('Parimpore', 'Cherry', 'Large'): {'start': '05-10', 'end': '06-30', 'years': list(range(2019, 2026))},
     ('Parimpore', 'Cherry', 'Medium'): {'start': '05-10', 'end': '06-30', 'years': list(range(2019, 2026))},
     ('Parimpore', 'Cherry', 'Small'): {'start': '05-10', 'end': '06-30', 'years': list(range(2019, 2026))},
@@ -63,20 +63,34 @@ sale_periods = {
     ('Shopian', 'Cherry', 'Large'): {'start': '05-20', 'end': '07-10', 'years': list(range(2019, 2026))},
     ('Shopian', 'Cherry', 'Medium'): {'start': '05-20', 'end': '07-10', 'years': list(range(2019, 2026))},
     ('Shopian', 'Cherry', 'Small'): {'start': '05-20', 'end': '07-10', 'years': list(range(2019, 2026))},
+    ('Shopian', 'American', 'A'): {'start': '10-01', 'end': '11-30', 'years': list(range(2017, 2026))},
+    ('Shopian', 'American', 'B'): {'start': '10-01', 'end': '11-30', 'years': list(range(2017, 2026))},
     ('Shopian', 'Delicious', 'A'): {'start': '09-15', 'end': '12-31', 'years': list(range(2017, 2026))},
     ('Shopian', 'Delicious', 'B'): {'start': '09-15', 'end': '12-31', 'years': list(range(2017, 2026))},
-    ('Shopian', 'Kullu delicious', 'A'): {'start': '09-01', 'end': '12-15', 'years': list(range(2017, 2026))},
-    ('Shopian', 'Kullu delicious', 'B'): {'start': '09-01', 'end': '12-15', 'years': list(range(2017, 2026))},
+    ('Shopian', 'Kullu Delicious', 'A'): {'start': '09-01', 'end': '11-15', 'years': list(range(2017, 2026))},
+    ('Shopian', 'Kullu Delicious', 'B'): {'start': '09-01', 'end': '11-15', 'years': list(range(2017, 2026))},
     ('Shopian', 'Maharaji', 'A'): {'start': '10-01', 'end': '11-30', 'years': list(range(2017, 2026))},
     ('Shopian', 'Maharaji', 'B'): {'start': '10-01', 'end': '11-30', 'years': list(range(2017, 2026))},
-    ('Sopore', 'American', 'A'): {'start': '01-01', 'end': '12-31', 'years': list(range(2015, 2026))},
-    ('Sopore', 'American', 'B'): {'start': '01-01', 'end': '12-31', 'years': list(range(2015, 2026))},
-    ('Sopore', 'Delicious', 'A'): {'start': '01-01', 'end': '12-31', 'years': list(range(2015, 2026))},
-    ('Sopore', 'Delicious', 'B'): {'start': '01-01', 'end': '12-31', 'years': list(range(2015, 2026))},
-    ('Sopore', 'Maharaji', 'A'): {'start': '11-01', 'end': '12-30', 'years': list(range(2015, 2026))},
-    ('Sopore', 'Maharaji', 'B'): {'start': '11-01', 'end': '12-30', 'years': list(range(2015, 2026))}
+    ('Pulwama-Pachhar', 'American', 'A'): {'start': '09-15', 'end': '11-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Pachhar', 'American', 'A'): {'start': '09-15', 'end': '11-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Pachhar', 'Delicious', 'A'): {'start': '09-15', 'end': '12-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Pachhar', 'Kullu Delicious', 'A'): {'start': '09-01', 'end': '11-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Prichoo', 'American', 'A'): {'start': '09-15', 'end': '11-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Prichoo', 'Delicious', 'A'): {'start': '09-15', 'end': '12-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Prichoo', 'Kullu Delicious', 'A'): {'start': '09-01', 'end': '11-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Pachhar', 'American', 'B'): {'start': '09-15', 'end': '11-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Pachhar', 'Delicious', 'B'): {'start': '09-15', 'end': '12-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Pachhar', 'Kullu Delicious', 'B'): {'start': '09-01', 'end': '11-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Prichoo', 'American', 'B'): {'start': '09-15', 'end': '11-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Prichoo', 'Delicious', 'B'): {'start': '09-15', 'end': '12-15', 'years': list(range(2018, 2026))},
+    ('Pulwama-Prichoo', 'Kullu Delicious', 'B'): {'start': '09-01', 'end': '11-15', 'years': list(range(2018, 2026))},
+    ('Sopore', 'American', 'A'): {'start': '08-01', 'end': '02-28', 'years': list(range(2015, 2026))},
+    ('Sopore', 'American', 'B'): {'start': '08-01', 'end': '02-28', 'years': list(range(2015, 2026))},
+    ('Sopore', 'Delicious', 'A'): {'start': '08-01', 'end': '02-28', 'years': list(range(2015, 2026))},
+    ('Sopore', 'Delicious', 'B'): {'start': '08-01', 'end': '02-28', 'years': list(range(2015, 2026))},
+    ('Sopore', 'Maharaji', 'A'): {'start': '11-01', 'end': '12-31', 'years': list(range(2015, 2026))},
+    ('Sopore', 'Maharaji', 'B'): {'start': '11-01', 'end': '12-31', 'years': list(range(2015, 2026))}
 }
-
 
 def create_forecast_plot(forecast_dates, future_predictions):
     trace = go.Scatter(x=forecast_dates, y=future_predictions, mode='lines+markers', name='Forecast')
@@ -289,7 +303,20 @@ def setup_routes(app):
             selected_fruit = request.form.get('fruit')
             selected_variety = request.form.get('variety')
             selected_grade = request.form.get('grade')
+            selected_submarket = request.form.get('submarket')
             forecast_option = request.form.get('forecast_option')  # 'week' or 'fortnight'
+
+            # Map Pulwama submarkets to sale_periods keys
+            if selected_market == "Pulwama":
+                if not selected_submarket:
+                    return jsonify({'error': 'Submarket selection is required for Pulwama.'}), 400
+                sale_market = f"Pulwama-{selected_submarket}"
+            elif selected_market == "Pachhar Pulwama":
+                sale_market = "Pulwama-Pachhar"
+            elif selected_market == "Prichoo Pulwama":
+                sale_market = "Pulwama-Prichoo"
+            else:
+                sale_market = selected_market
 
             # ✅ Use today's date as start_date
             start_date = pd.to_datetime(datetime.today().date())
@@ -297,10 +324,10 @@ def setup_routes(app):
             if not forecast_option:
                 return jsonify({'error': 'Forecast option is required.'}), 400
 
-            sale_key = (selected_market, selected_variety, selected_grade)
+            sale_key = (sale_market, selected_variety, selected_grade)
             sale_info = sale_periods.get(sale_key)
             if not sale_info:
-                return jsonify({'error': f'No sale period defined for {selected_market}, {selected_variety}, {selected_grade}.'}), 400
+                return jsonify({'error': f'No sale period defined for {sale_market}, {selected_variety}, {selected_grade}.'}), 400
 
             current_year = datetime.now().year
             if current_year not in sale_info['years']:
@@ -309,8 +336,12 @@ def setup_routes(app):
             sale_start_date = pd.to_datetime(f"{current_year}-{sale_info['start']}")
             sale_end_date = pd.to_datetime(f"{current_year}-{sale_info['end']}")
 
-            if start_date < sale_start_date or start_date > datetime.now():
-                return jsonify({'error': f'Start date {start_date.strftime("%Y-%m-%d")} is outside allowed range ({sale_start_date.strftime("%Y-%m-%d")} to today).'}), 400
+            # Adjust start_date to be within sale period
+            start_date = max(start_date, sale_start_date)
+            end_date = min(datetime.now(), sale_end_date)
+
+            if start_date > end_date:
+                return jsonify({'error': f'No forecast available for today. Valid range: {sale_start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'}), 400
 
             # ✅ Load precomputed forecast CSV
             forecast_file = f"data/forecasts/{selected_market}_{selected_variety}_{selected_grade}_forecast.csv"
