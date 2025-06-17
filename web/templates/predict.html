@@ -106,6 +106,9 @@
   {% if predicted_prices %}
   <div class="predictions">
     <h2>Your Predictions</h2>
+    {% if forecast_message %}
+    <p><em>{{ forecast_message }}</em></p>
+    {% endif %}
     <div class="forecast-section">
       <div class="forecast-list">
         <ul>

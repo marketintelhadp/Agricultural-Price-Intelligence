@@ -318,9 +318,6 @@ def setup_routes(app):
             else:
                 sale_market = selected_market
 
-            # ✅ Use today's date as start_date
-            start_date = pd.to_datetime(datetime.today().date())
-
             if not forecast_option:
                 return jsonify({'error': 'Forecast option is required.'}), 400
 
@@ -336,33 +333,46 @@ def setup_routes(app):
             sale_start_date = pd.to_datetime(f"{current_year}-{sale_info['start']}")
             sale_end_date = pd.to_datetime(f"{current_year}-{sale_info['end']}")
 
-            # Adjust start_date to be within sale period
-            start_date = max(start_date, sale_start_date)
-            end_date = min(datetime.now(), sale_end_date)
-
-            if start_date > end_date:
-                return jsonify({'error': f'No forecast available for today. Valid range: {sale_start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'}), 400
-
-            # ✅ Load precomputed forecast CSV
-            forecast_file = f"data/forecasts/{selected_market}_{selected_variety}_{selected_grade}_forecast.csv"
+            if selected_market == "Pulwama" and selected_submarket:
+                forecast_file = f"data/forecasts/{selected_market}_{selected_submarket}_{selected_variety}_{selected_grade}_forecast.csv"
+            else:
+                forecast_file = f"data/forecasts/{selected_market}_{selected_variety}_{selected_grade}_forecast.csv"
             if not os.path.exists(forecast_file):
                 return jsonify({'error': 'Forecast data not yet generated. Please try later.'}), 500
 
             forecast_df = pd.read_csv(forecast_file)
             forecast_df['Date'] = pd.to_datetime(forecast_df['Date'])
 
-            # ✅ Filter forecast from selected start_date
-            forecast_df = forecast_df[forecast_df['Date'] >= start_date]
             forecast_length = 7 if forecast_option == 'week' else 14
-            filtered = forecast_df.head(forecast_length)
 
-            if filtered.empty:
-                return jsonify({'error': f'No forecasts available starting from {start_date.strftime("%Y-%m-%d")}.'}), 400
+            # For apple, show forecasts regardless of current date with a message
+            if selected_fruit.lower() == 'apple':
+                forecast_df = forecast_df.head(10)
+                forecast_dates = forecast_df['Date'].dt.strftime('%Y-%m-%d').tolist()
+                filtered_prices = forecast_df['Forecast'].tolist()
+                forecast_plot = create_forecast_plot(forecast_dates, filtered_prices)
+                predicted_prices = list(zip(forecast_dates, filtered_prices))
+                message = f"Forecasts are shown for the sale period from {sale_start_date.strftime('%Y-%m-%d')} to {sale_end_date.strftime('%Y-%m-%d')}."
+            else:
+                # For cherry and others, filter forecast from today's date or sale start date
+                start_date = pd.to_datetime(datetime.today().date())
+                start_date = max(start_date, sale_start_date)
+                end_date = min(datetime.now(), sale_end_date)
 
-            forecast_dates = filtered['Date'].dt.strftime('%Y-%m-%d').tolist()
-            filtered_prices = filtered['Forecast'].tolist()
-            forecast_plot = create_forecast_plot(forecast_dates, filtered_prices)
-            predicted_prices = list(zip(forecast_dates, filtered_prices))
+                if start_date > end_date:
+                    return jsonify({'error': f'No forecast available for today. Valid range: {sale_start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'}), 400
+
+                forecast_df = forecast_df[forecast_df['Date'] >= start_date]
+                filtered = forecast_df.head(forecast_length)
+
+                if filtered.empty:
+                    return jsonify({'error': f'No forecasts available starting from {start_date.strftime("%Y-%m-%d")}.'}), 400
+
+                forecast_dates = filtered['Date'].dt.strftime('%Y-%m-%d').tolist()
+                filtered_prices = filtered['Forecast'].tolist()
+                forecast_plot = create_forecast_plot(forecast_dates, filtered_prices)
+                predicted_prices = list(zip(forecast_dates, filtered_prices))
+                message = None
 
             # Prepare dropdown reload
             fruits, varieties, grades = get_config_options(selected_market, selected_fruit, selected_variety)
@@ -381,7 +391,8 @@ def setup_routes(app):
                 selected_grade=selected_grade,
                 predicted_prices=predicted_prices,
                 trend_plot=forecast_plot,
-                start_date=start_date.strftime('%Y-%m-%d'))
+                start_date=sale_start_date.strftime('%Y-%m-%d'),
+                forecast_message=message)
 
         except Exception as e:
             logging.exception("Prediction failed with traceback:")
